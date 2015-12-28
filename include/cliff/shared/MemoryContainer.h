@@ -23,6 +23,21 @@ namespace cliff {
 
 		MemoryContainer(const MemoryContainer& that) = delete;
 
+		~MemoryContainer() {
+			//TODO destruct allocated object
+
+			for(unsigned int block_index=0; block_index<_blocks_allocated; block_index++) {
+
+				for(unsigned int object_index=0; object_index < (block_index == _blocks_allocated-1 ? _blocks[block_index]._size-_current_blocks_size_remain : _blocks[block_index]._size); object_index++) {
+					(_blocks[block_index]._memory+object_index)->~Type();
+				}
+
+				(_blocks+block_index)->~Block();
+			}
+
+			std::free(_blocks);
+		}
+
 
 		template<typename... Args>
 		Type& emplace(Args... args) {
@@ -35,14 +50,11 @@ namespace cliff {
 			return *(_blocks[_blocks_allocated-1]._memory+offset);
 		}
 
-		Type& test() {
-			return *(_blocks[0]._memory);
-		}
-
 	private:
 		struct Block {
 
 			Block(unsigned int size) {
+				_size = size;
 				_memory = static_cast<Type*>(std::malloc(size*sizeof(Type)));
 			}
 
@@ -50,6 +62,7 @@ namespace cliff {
 				std::free(_memory);
 			}
 
+			unsigned int _size;
 			Type* _memory;
 		};
 

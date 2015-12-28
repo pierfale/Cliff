@@ -20,10 +20,10 @@ void LexerGenerator::generate_lexer(const Syntax& ebnf_syntax, const AbstractSyn
 	std::cout << "Non Derterministe Finite Automata : " << std::endl;
 	nfa_start_node.print(std::cout);
 	std::cout << std::endl;
-/*
+
 	std::sort(std::begin(alphabet), std::end(alphabet));
-	alphabet.erase(std::unique(std::begin(alphabet), std::end(alphabet)));
-*/
+	alphabet.erase(std::unique(std::begin(alphabet), std::end(alphabet)), std::end(alphabet));
+
 	MemoryContainer<DeterministeFiniteAutomataNode> dfa_memory;
 	DeterministeFiniteAutomataNode dfa_start_node(dfa_memory);
 	create_dfa(ebnf_syntax, nfa_start_node, dfa_start_node, alphabet);

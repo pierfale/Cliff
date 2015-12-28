@@ -3,20 +3,14 @@
 using namespace cliff;
 
 void ParserGenerator::generate_parser(const Syntax& ebnf_syntax, const AbstractSyntaxTree& syntax_tree, Syntax& output_syntax) {
-	//special symbols
-	TokenSymbol token_symbol_eof("_eof_");
-	TokenSymbol token_symbol_root("_root_");
-
-	std::cout << "eof=" << &token_symbol_eof << std::endl;
-
 	RuleList rule_list;
 	const char* main_rule = nullptr;
 	construct_rule_list(ebnf_syntax, output_syntax, syntax_tree, rule_list, &main_rule);
 
 	std::vector<Rule> init_rule;
-	init_rule.emplace_back(token_symbol_root);
+	init_rule.emplace_back(output_syntax.get_symbol_from_name(Syntax::Root_symbol));
 	init_rule[0].word_list.emplace_back(false, output_syntax.get_symbol_from_name(main_rule));
-	rule_list.insert(std::make_pair(&token_symbol_root, init_rule));
+	rule_list.insert(std::make_pair(&output_syntax.get_symbol_from_name(Syntax::Root_symbol), init_rule));
 
 	for(auto& rule : rule_list) {
 		std::cout << "Rule \"" << rule.first->string() << "\"" << std::endl;
@@ -31,7 +25,7 @@ void ParserGenerator::generate_parser(const Syntax& ebnf_syntax, const AbstractS
 
 	std::vector<Set> set_list;
 	set_list.emplace_back();
-	set_list.back().item_list.emplace_back(init_rule[0], 0, token_symbol_eof);
+	set_list.back().item_list.emplace_back(init_rule[0], 0, output_syntax.get_symbol_from_name(Syntax::EOF_symbol));
 	closure_procedure(ebnf_syntax, output_syntax, rule_list, set_list.back());
 
 	construct_closure_set(ebnf_syntax, output_syntax, rule_list, set_list);
@@ -140,7 +134,7 @@ void ParserGenerator::closure_procedure(const Syntax& ebnf_syntax, const Syntax&
 
 					if(first_list.size() > 1) {
 						std::sort(std::begin(first_list), std::end(first_list));
-						first_list.erase(std::unique(std::begin(first_list), std::end(first_list)));
+						first_list.erase(std::unique(std::begin(first_list), std::end(first_list)), std::end(first_list));
 					}
 					for(const TokenSymbol* symbol : first_list) {
 						Item new_item(rule, 0, *symbol);
@@ -212,12 +206,12 @@ bool ParserGenerator::is_epsilon_productive(const Syntax& ebnf_syntax, const Rul
 void ParserGenerator::generate_parser(const Syntax& ebnf_syntax, Syntax& output_syntax, const RuleList& rule_list, const std::vector<Set>& set_list) {
 	output_syntax.set_parser_table(set_list.size());
 
+
 	for(unsigned int set_index = 0; set_index < set_list.size(); set_index++) {
 
 		for(auto it_symbol = output_syntax.begin_terminal(); it_symbol != output_syntax.end_terminal(); ++it_symbol) {
 			output_syntax.parser_goto_table()[(it_symbol-output_syntax.begin_terminal())*set_list.size()+set_index] = Syntax::Parser_unaccepting_state;
 		}
-/*
 
 		for(const Item& item : set_list[set_index].item_list) {
 			int j;
@@ -232,8 +226,7 @@ void ParserGenerator::generate_parser(const Syntax& ebnf_syntax, Syntax& output_
 			else {
 
 			}
-		}*/
-
+		}
 
 		for(auto it_symbol = output_syntax.begin_non_terminal(); it_symbol != output_syntax.end_non_terminal(); ++it_symbol) {
 			int j;

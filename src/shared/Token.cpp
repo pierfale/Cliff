@@ -16,7 +16,7 @@ TokenSymbol::TokenSymbol(const char* owner_string, unsigned int size) : _string(
 }
 
 TokenSymbol::~TokenSymbol() {
-	delete _string;
+	delete[] _string;
 }
 
 
@@ -52,6 +52,10 @@ Token::Token(const Token& that) : _type(that._type), _content(nullptr) {
 		_content = new char[size+1];
 		memcpy(_content, that._content, size+1);
 	}
+}
+
+Token::~Token() {
+	delete[] _content;
 }
 
 const TokenSymbol& Token::type() const {

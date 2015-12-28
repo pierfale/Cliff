@@ -2,8 +2,24 @@
 
 using namespace cliff;
 
-Syntax::Syntax() : _lexer_state_number(0), _lexer_table(nullptr) {
+const char* Syntax::EOF_symbol = "_eof_";
+const char* Syntax::Root_symbol = "_root_";
 
+Syntax::Syntax() : _symbol_number(0), _symbol_non_terminal_start(0), _symbol_table(nullptr),
+	_lexer_state_number(0), _lexer_table(nullptr), _lexer_accepting_state(nullptr),
+	_parser_state_number(0), _action_table(nullptr), _goto_table(nullptr) {
+
+}
+
+Syntax::~Syntax() {
+	for(unsigned int i=0; i<_symbol_number; i++)
+		(_symbol_table+i)->~TokenSymbol();
+
+	std::free(_symbol_table);
+	delete[] _lexer_table;
+	delete[] _lexer_accepting_state;
+	delete[] _action_table;
+	delete[] _goto_table;
 }
 
 void Syntax::load(const char* filename) {
@@ -51,6 +67,8 @@ void Syntax::load(const char* filename) {
 
 	file.read((char*)_lexer_accepting_state, _parser_state_number*(_symbol_number-_symbol_non_terminal_start)*sizeof(Index));
 	file.read((char*)_lexer_table, _parser_state_number*_symbol_non_terminal_start*sizeof(Index));
+
+	file.close();
 }
 
 void Syntax::save(const char* filename) {
@@ -82,6 +100,8 @@ void Syntax::save(const char* filename) {
 
 	file.write((char*)_action_table, _parser_state_number*(_symbol_number-_symbol_non_terminal_start)*sizeof(Index));
 	file.write((char*)_goto_table, _parser_state_number*_symbol_non_terminal_start*sizeof(Index));
+
+	file.close();
 }
 
 //
@@ -174,6 +194,9 @@ const Syntax::Index* Syntax::lexer_accepting_state() const {
 // Parser
 //
 void Syntax::set_parser_table(unsigned int state_number) {
+	std::cout << "action=" << state_number << "*" << (_symbol_number-_symbol_non_terminal_start) << std::endl;
+	std::cout << "goto=" << state_number << "*" << _symbol_non_terminal_start << std::endl;
+
 	_action_table = new Index[state_number*(_symbol_number-_symbol_non_terminal_start)];
 	_goto_table = new Index[state_number*_symbol_non_terminal_start];
 	_parser_state_number = state_number;

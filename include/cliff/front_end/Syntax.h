@@ -17,6 +17,8 @@ namespace cliff {
 		typedef uint32_t Index;
 		typedef int Letter;
 
+		static const char* EOF_symbol;
+		static const char* Root_symbol;
 
 		static const State Lexer_init_state = 0x0;
 		static const State Lexer_state_error = 0xFFFFFFFF;
@@ -28,10 +30,8 @@ namespace cliff {
 		static const Index Parser_action_reduce_mask = 0x20000000;
 		static const Index Parser_action_accept_mask = 0x10000000;
 
-
-
-
 		Syntax();
+		~Syntax();
 
 		void load(const char* filename);
 		void save(const char* filename);

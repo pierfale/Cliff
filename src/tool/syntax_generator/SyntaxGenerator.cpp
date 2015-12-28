@@ -173,14 +173,19 @@ void SyntaxGenerator::create_syntax(const Syntax& ebnf_syntax, const AbstractSyn
 	std::vector<std::pair<const char*, bool>> symbols_name;
 	get_symbols_name(ebnf_syntax, ast, symbols_name);
 
+	symbols_name.push_back(std::make_pair(Syntax::EOF_symbol, true));
+	symbols_name.push_back(std::make_pair(Syntax::Root_symbol, false));
+
 	std::sort(std::begin(symbols_name), std::end(symbols_name), [](std::pair<const char*, bool> symbol_1, std::pair<const char*, bool> symbol_2) {
 		return symbol_1.second != symbol_2.second ? symbol_1.second: std::strcmp(symbol_1.first, symbol_2.first) <= 0; });
+
 	symbols_name.erase(std::unique(std::begin(symbols_name), std::end(symbols_name), [](std::pair<const char*, bool> symbol_1, std::pair<const char*, bool> symbol_2) {
-		return symbol_1.second == symbol_2.second && std::strcmp(symbol_1.first, symbol_2.first) == 0; }));
+		return symbol_1.second == symbol_2.second && std::strcmp(symbol_1.first, symbol_2.first) == 0; }), std::end(symbols_name));
 
 	std::vector<const char*> ordered_symbols_name;
 	ordered_symbols_name.resize(symbols_name.size());
 	std::transform(std::begin(symbols_name), std::end(symbols_name), std::begin(ordered_symbols_name), [](std::pair<const char*, bool> symbol) {return symbol.first;});
+
 
 	unsigned int terminal_number = std::count_if(std::begin(symbols_name), std::end(symbols_name),  [](std::pair<const char*, bool> symbol) -> bool {return symbol.second;});
 	generated_syntax.set_symbol_table(ordered_symbols_name, terminal_number);
