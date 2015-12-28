@@ -1,0 +1,9 @@
+root := function;
+
+function := function_qualifier identifier '(' [parameter_list]? ')' [':' parameter_list]? statement;
+
+statement := instruction | '{' [instruction]* '}';
+
+instruction := 'ok' [';']?;
+
+identifier := #[:alpha:][:alnum]*#
