@@ -10,7 +10,7 @@ namespace cliff {
 	namespace exception {
 
 #ifdef _WIN32
-#define LAUNCH_BREAKPOINT __debugbreak();
+#define LAUNCH_BREAKPOINT //__debugbreak();
 #else
 #define LAUNCH_BREAKPOINT
 #endif
@@ -39,6 +39,29 @@ namespace cliff {
 			const char* _exception_type;
 			std::string _message;
 		};
+
+		class UserMessage : public Exception {
+
+
+		public:
+			enum Level {
+				Information,
+				Warning,
+				Error
+			};
+
+			UserMessage(Level level, const std::string& message) : Exception(message), _level(level) {
+
+			}
+
+			Level level() const {
+				return _level;
+			}
+
+		private:
+			Level _level;
+		};
+
 
 		class BadLineCommand : public Exception {
 

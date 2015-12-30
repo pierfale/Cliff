@@ -8,12 +8,14 @@ void LexerGenerator::generate_lexer(const Syntax& ebnf_syntax, const AbstractSyn
 	std::vector<Automata::Symbol> alphabet;
 	create_regular_expression_nfa(ebnf_syntax, syntax_tree, nfa_start_node, alphabet, output_syntax);
 	for(auto it_symbol = output_syntax.begin_terminal(); it_symbol != output_syntax.end_terminal(); ++it_symbol) {
-		NonDeterministeFiniteAutomataNode* current_node = &nfa_start_node;
-		for(unsigned str_index = 0; str_index < it_symbol->size(); str_index++) {
-			current_node = &current_node->create_output_node(it_symbol->string()[str_index]);
-			alphabet.push_back(it_symbol->string()[str_index]);
+		if(*it_symbol != output_syntax.get_symbol_from_name(Syntax::EOF_symbol)) {
+			NonDeterministeFiniteAutomataNode* current_node = &nfa_start_node;
+			for(unsigned str_index = 0; str_index < it_symbol->size(); str_index++) {
+				current_node = &current_node->create_output_node(it_symbol->string()[str_index]);
+				alphabet.push_back(it_symbol->string()[str_index]);
+			}
+			current_node->add_accepting_state(*it_symbol);
 		}
-		current_node->add_accepting_state(*it_symbol);
 	}
 
 
@@ -280,7 +282,8 @@ bool LexerGenerator::is_equal_transition(const DeterministeFiniteAutomataNode* n
 		transition_2.push_back(transition.first);
 	}
 
-	return std::is_permutation(std::begin(transition_1), std::end(transition_1), std::begin(transition_2));
+	return std::is_permutation(std::begin(transition_1), std::end(transition_1), std::begin(transition_2))
+		&& std::is_permutation(std::begin(node_1->accepting_state()), std::end(node_1->accepting_state()), std::begin(node_2->accepting_state()));
 }
 
 void LexerGenerator::generate_lexer(Syntax& output_syntax, const DeterministeFiniteAutomataNode& start_node) {
@@ -317,9 +320,10 @@ void LexerGenerator::generate_lexer(Syntax& output_syntax, const DeterministeFin
 			}
 		}
 
-		// TODO if serveral accepting on same state, eval priority.
-		if(node_list[state_index]->accepting_state().size() >= 1)
+		// TODO if several accepting on same state, eval priority.
+		if(node_list[state_index]->accepting_state().size() >= 1) {
 			output_syntax.lexer_accepting_state()[state_index] = output_syntax.index_of_symbol(*node_list[state_index]->accepting_state()[0]);
+		}
 		else
 			output_syntax.lexer_accepting_state()[state_index] = Syntax::Lexer_unaccepting_state;
 	}

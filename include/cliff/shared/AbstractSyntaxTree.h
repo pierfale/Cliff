@@ -19,6 +19,7 @@ public:
 
 	AbstractSyntaxTree& add_child(const TokenSymbol& symbol);
 	AbstractSyntaxTree& add_child(const Token& token);
+	AbstractSyntaxTree& add_child(AbstractSyntaxTree* child);
 
 	bool is_leaf() const;
 	const TokenSymbol& type() const;

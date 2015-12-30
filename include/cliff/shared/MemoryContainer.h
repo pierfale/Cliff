@@ -40,12 +40,12 @@ namespace cliff {
 
 
 		template<typename... Args>
-		Type& emplace(Args... args) {
+		Type& emplace(Args&&... args) {
 			check_memory();
 
 			unsigned int offset = ((_blocks_allocated == 1 ? 1 : (_blocks_allocated-1)*Allocator<Type>::growing_memory_number_size)*Allocator<Type>::memory_block_number_base-_current_blocks_size_remain);
 
-			new (_blocks[_blocks_allocated-1]._memory+offset) Type(args...);
+			new (_blocks[_blocks_allocated-1]._memory+offset) Type(std::forward<Args>(args)...);
 			_current_blocks_size_remain--;
 			return *(_blocks[_blocks_allocated-1]._memory+offset);
 		}

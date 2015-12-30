@@ -19,7 +19,7 @@ namespace cliff {
 		unsigned int size() const;
 
 		bool operator==(const TokenSymbol& that) const;
-
+		bool operator!=(const TokenSymbol& that) const;
 	private:
 		char* _string;
 		unsigned int _size;

@@ -71,7 +71,8 @@ void ParserGenerator::construct_rule_list(const Syntax& ebnf_syntax, const Synta
 void ParserGenerator::construct_rule(const Syntax& ebnf_syntax, const Syntax& generated_syntax, const AbstractSyntaxTree& syntax_tree, Rule& rule) {
 	if(syntax_tree.type() == ebnf_syntax.get_symbol_from_name("rule_definition")) {
 		for(const AbstractSyntaxTree* child : syntax_tree.children()) {
-			const TokenSymbol& word_symbol = generated_syntax.get_symbol_from_name(child->content());
+			const TokenSymbol& word_symbol = generated_syntax.get_symbol_from_name_or_else(child->content(),
+												exception::UserMessage(exception::UserMessage::Error, "Unable to find rule \""+std::string(child->content())+"\" in syntax file")); //TODO : add line+filename
 			if(child->type() == ebnf_syntax.get_symbol_from_name("rule_non_terminal")) {
 				rule.word_list.emplace_back(false, word_symbol);
 			}
@@ -213,26 +214,32 @@ void ParserGenerator::generate_parser(const Syntax& ebnf_syntax, Syntax& output_
 			output_syntax.parser_goto_table()[(it_symbol-output_syntax.begin_terminal())*set_list.size()+set_index] = Syntax::Parser_unaccepting_state;
 		}
 
+		for(auto it_symbol = output_syntax.begin_non_terminal(); it_symbol != output_syntax.end_non_terminal(); ++it_symbol) {
+			output_syntax.parser_action_table()[(it_symbol-output_syntax.begin_non_terminal())*set_list.size()+set_index] = Syntax::Parser_unaccepting_state;
+		}
+
 		for(const Item& item : set_list[set_index].item_list) {
 			int j;
 			if(item.cursor == item.rule.word_list.size()) {
-				output_syntax.parser_action_table()[output_syntax.index_of_symbol(item.next_token)*set_list.size()+set_index] = Syntax::Parser_action_reduce_mask | output_syntax.index_of_symbol(item.rule.left_member);
-				std::cout << "Action[" << set_index << ", " << item.next_token.string() << "] : r " << output_syntax.index_of_symbol(item.rule.left_member) << std::endl;
+				std::cout << set_index << ", " << item.next_token.string() << " => r " << output_syntax.index_of_symbol(item.rule.left_member) << std::endl;
+				if(item.next_token == output_syntax.get_symbol_from_name(Syntax::EOF_symbol) && item.rule.left_member == output_syntax.get_symbol_from_name(Syntax::Root_symbol))
+					output_syntax.parser_action_table()[output_syntax.index_of_symbol(item.next_token)*set_list.size()+set_index] = Syntax::Parser_action_accept_mask;
+				else {
+					output_syntax.parser_action_table()[output_syntax.index_of_symbol(item.next_token)*set_list.size()+set_index] = Syntax::Parser_action_reduce_mask | output_syntax.index_of_symbol(item.rule.left_member);
+					output_syntax.parser_reduce_number()[output_syntax.index_of_symbol(item.next_token)*set_list.size()+set_index] = item.rule.word_list.size();
+				}
 			}
 			else if(item.rule.word_list[item.cursor].is_terminal && (j = find_goto(ebnf_syntax, output_syntax, rule_list, set_list[set_index], item.rule.word_list[item.cursor].content, set_list)) != -1) {
+				//std::cout << set_index << ", " << item.rule.word_list[item.cursor].content.string() << " => s " << j << std::endl;
 				output_syntax.parser_action_table()[output_syntax.index_of_symbol(item.rule.word_list[item.cursor].content)*set_list.size()+set_index] = Syntax::Parser_action_shift_mask | j;
-				std::cout << "Action[" << set_index << ", " << item.rule.word_list[item.cursor].content.string() << "] : s " << j << std::endl;
-			}
-			else {
-
 			}
 		}
 
 		for(auto it_symbol = output_syntax.begin_non_terminal(); it_symbol != output_syntax.end_non_terminal(); ++it_symbol) {
 			int j;
 			if((j = find_goto(ebnf_syntax, output_syntax, rule_list, set_list[set_index], *it_symbol, set_list)) != -1) {
+				std::cout << set_index << ", " <<it_symbol->string() << " => " << j << ", " << (it_symbol-output_syntax.begin_non_terminal()) << std::endl;
 				output_syntax.parser_goto_table()[(it_symbol-output_syntax.begin_non_terminal())*set_list.size()+set_index] = j;
-				std::cout << "Goto[" << set_index << ", " << it_symbol->string() << "] : " << j << std::endl;
 			}
 			else {
 				output_syntax.parser_goto_table()[(it_symbol-output_syntax.begin_non_terminal())*set_list.size()+set_index] = Syntax::Parser_unaccepting_state;

@@ -15,15 +15,20 @@ AbstractSyntaxTree::~AbstractSyntaxTree() {
 }
 
 AbstractSyntaxTree& AbstractSyntaxTree::add_child(const TokenSymbol& symbol) {
-	AbstractSyntaxTree& child = _memory_container.emplace<MemoryContainer<AbstractSyntaxTree>&, const TokenSymbol&>(_memory_container, symbol);
+	AbstractSyntaxTree& child = _memory_container.emplace(_memory_container, symbol);
 	_children.push_back(&child);
 	return child;
 }
 
 AbstractSyntaxTree& AbstractSyntaxTree::add_child(const Token& token) {
-	AbstractSyntaxTree& child =  _memory_container.emplace<MemoryContainer<AbstractSyntaxTree>&, const Token&>(_memory_container, token);
+	AbstractSyntaxTree& child =  _memory_container.emplace(_memory_container, token);
 	_children.push_back(&child);
 	return child;
+}
+
+AbstractSyntaxTree& AbstractSyntaxTree::add_child(AbstractSyntaxTree* child) {
+	_children.push_back(child);
+	return *child;
 }
 
 bool AbstractSyntaxTree::is_leaf() const {

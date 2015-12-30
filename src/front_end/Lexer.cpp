@@ -50,7 +50,6 @@ void Lexer::execute(std::istream& input, std::vector<Token>& output) {
 		}
 
 		const TokenSymbol* current_symbol = _syntax.lexer_accepting_state(current_state);
-
 		if(current_symbol != nullptr) {
 			while(!unaccepted_letter_buffer.empty()) {
 				accepted_letter_buffer.push(unaccepted_letter_buffer.front());
@@ -70,7 +69,7 @@ void Lexer::execute(std::istream& input, std::vector<Token>& output) {
 		output.push_back(Token(*last_accepting_state, token_content.c_str()));
 	}
 
-	for(Token& token : output)
-		std::cout << "->" << token.type().string() << " : " << token.content() << std::endl;
+	// push eof
+	output.push_back(Token(_syntax.get_symbol_from_name(Syntax::EOF_symbol)));
 
 }

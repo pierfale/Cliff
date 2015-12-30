@@ -32,6 +32,10 @@ bool TokenSymbol::operator==(const TokenSymbol& that) const {
 	return this == &that;
 }
 
+bool TokenSymbol::operator!=(const TokenSymbol& that) const {
+	return !operator==(that);
+}
+
 //
 //	Token
 //

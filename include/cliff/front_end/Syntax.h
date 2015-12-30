@@ -25,10 +25,12 @@ namespace cliff {
 		static const Index Lexer_unaccepting_state = 0xFFFFFFFF;
 		static const int Direct_letter_range = 128;
 
+		static const State Parser_init_state;
 		static const Index Parser_unaccepting_state = 0xFFFFFFFF;
 		static const Index Parser_action_shift_mask = 0x40000000;
 		static const Index Parser_action_reduce_mask = 0x20000000;
 		static const Index Parser_action_accept_mask = 0x10000000;
+		static const Index Parser_action_content_mask = 0xFFFFFF;
 
 		Syntax();
 		~Syntax();
@@ -41,6 +43,8 @@ namespace cliff {
 		//
 		void set_symbol_table(std::vector<const char*> symbols, unsigned int terminal_range);
 		const TokenSymbol& get_symbol_from_name(const char* symbol_name) const;
+		const TokenSymbol& get_symbol_from_name_or_else(const char* symbol_name, const exception::UserMessage& message) const;
+
 		unsigned int index_of_symbol(const TokenSymbol& symbol) const;
 
 		const TokenSymbol* begin_terminal();
@@ -63,11 +67,19 @@ namespace cliff {
 		//
 		// Parser
 		//
+		Index next_parser_action(State current_state, const TokenSymbol& current_symbol) const;
+		State next_parser_goto(State current_state, const TokenSymbol& current_symbol) const;
+		const TokenSymbol& parser_reduce_symbol(State current_state, const TokenSymbol& current_symbol) const;
+		unsigned int parser_reduce_number(State current_state, const TokenSymbol& current_symbol) const;
+
 		void set_parser_table(unsigned int state_number);
 		Index* parser_action_table();
 		const Index* parser_action_table() const;
 		Index* parser_goto_table();
 		const Index* parser_goto_table() const;
+
+		Index* parser_reduce_number();
+		const Index* parser_reduce_number() const;
 
 	private:
 		//
@@ -96,7 +108,10 @@ namespace cliff {
 		//
 		unsigned int _parser_state_number;
 		Index* _action_table;
+		Index* _reduce_number;
+
 		Index* _goto_table;
+		std::tuple<const TokenSymbol*, unsigned int> _reduce_table;
 
 
 	};

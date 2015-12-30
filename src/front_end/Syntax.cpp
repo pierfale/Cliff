@@ -5,6 +5,8 @@ using namespace cliff;
 const char* Syntax::EOF_symbol = "_eof_";
 const char* Syntax::Root_symbol = "_root_";
 
+const Syntax::State Syntax::Parser_init_state = 0x0;
+
 Syntax::Syntax() : _symbol_number(0), _symbol_non_terminal_start(0), _symbol_table(nullptr),
 	_lexer_state_number(0), _lexer_table(nullptr), _lexer_accepting_state(nullptr),
 	_parser_state_number(0), _action_table(nullptr), _goto_table(nullptr) {
@@ -28,6 +30,11 @@ void Syntax::load(const char* filename) {
 	if(!file.is_open()) {
 		THROW(exception::FileNotFound, filename);
 	}
+
+	file.seekg(0, std::ios::end);
+	std::cout << file.tellg() << std::endl;
+	file.seekg(0, std::ios::beg);
+
 
 	std::cout << "Read syntax file" << std::endl;
 	std::cout << "================" << std::endl;
@@ -65,8 +72,9 @@ void Syntax::load(const char* filename) {
 
 	set_parser_table(parser_state_number);
 
-	file.read((char*)_lexer_accepting_state, _parser_state_number*(_symbol_number-_symbol_non_terminal_start)*sizeof(Index));
-	file.read((char*)_lexer_table, _parser_state_number*_symbol_non_terminal_start*sizeof(Index));
+	file.read((char*)_action_table, _parser_state_number*(_symbol_number-_symbol_non_terminal_start)*sizeof(Index));
+	file.read((char*)_reduce_number, _parser_state_number*(_symbol_number-_symbol_non_terminal_start)*sizeof(Index));
+	file.read((char*)_goto_table, _parser_state_number*_symbol_non_terminal_start*sizeof(Index));
 
 	file.close();
 }
@@ -99,6 +107,7 @@ void Syntax::save(const char* filename) {
 	file.write((char*)&parser_state_number, sizeof(uint32_t));
 
 	file.write((char*)_action_table, _parser_state_number*(_symbol_number-_symbol_non_terminal_start)*sizeof(Index));
+	file.write((char*)_reduce_number, _parser_state_number*(_symbol_number-_symbol_non_terminal_start)*sizeof(Index));
 	file.write((char*)_goto_table, _parser_state_number*_symbol_non_terminal_start*sizeof(Index));
 
 	file.close();
@@ -123,6 +132,15 @@ const TokenSymbol& Syntax::get_symbol_from_name(const char* symbol_name) const {
 	auto it = _symbols_index.find(symbol_name);
 	if(it == std::end(_symbols_index)) {
 		THROW(exception::ElementNotFound, symbol_name);
+	}
+	else
+		return _symbol_table[it->second];
+}
+
+const TokenSymbol& Syntax::get_symbol_from_name_or_else(const char* symbol_name, const exception::UserMessage& message) const {
+	auto it = _symbols_index.find(symbol_name);
+	if(it == std::end(_symbols_index)) {
+		throw message;
 	}
 	else
 		return _symbol_table[it->second];
@@ -193,11 +211,25 @@ const Syntax::Index* Syntax::lexer_accepting_state() const {
 //
 // Parser
 //
-void Syntax::set_parser_table(unsigned int state_number) {
-	std::cout << "action=" << state_number << "*" << (_symbol_number-_symbol_non_terminal_start) << std::endl;
-	std::cout << "goto=" << state_number << "*" << _symbol_non_terminal_start << std::endl;
+Syntax::Index Syntax::next_parser_action(State current_state, const TokenSymbol& current_symbol) const {
+	return _action_table[index_of_symbol(current_symbol)*_parser_state_number+current_state];
+}
 
+Syntax::State Syntax::next_parser_goto(State current_state, const TokenSymbol& current_symbol) const {
+	return _goto_table[(index_of_symbol(current_symbol)-_symbol_non_terminal_start)*_parser_state_number+current_state];
+}
+
+const TokenSymbol& Syntax::parser_reduce_symbol(State current_state, const TokenSymbol& current_symbol) const {
+	return _symbol_table[_action_table[index_of_symbol(current_symbol)*_parser_state_number+current_state] & Parser_action_content_mask];
+}
+
+unsigned int Syntax::parser_reduce_number(State current_state, const TokenSymbol& current_symbol) const {
+	return _reduce_number[index_of_symbol(current_symbol)*_parser_state_number+current_state];
+}
+
+void Syntax::set_parser_table(unsigned int state_number) {
 	_action_table = new Index[state_number*(_symbol_number-_symbol_non_terminal_start)];
+	_reduce_number = new Index[state_number*(_symbol_number-_symbol_non_terminal_start)];
 	_goto_table = new Index[state_number*_symbol_non_terminal_start];
 	_parser_state_number = state_number;
 }
@@ -216,4 +248,12 @@ Syntax::Index* Syntax::parser_goto_table() {
 
 const Syntax::Index* Syntax::parser_goto_table() const {
 	return _goto_table;
+}
+
+Syntax::Index* Syntax::parser_reduce_number() {
+	return _reduce_number;
+}
+
+const Syntax::Index* Syntax::parser_reduce_number() const {
+	return _reduce_number;
 }

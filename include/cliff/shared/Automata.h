@@ -53,7 +53,7 @@ namespace cliff {
 		}
 
 		AutomataNode<Type>& create_node() {
-			return _memory_container.template emplace<MemoryContainer<AutomataNode<Type>>&>(_memory_container);
+			return _memory_container.emplace(_memory_container);
 		}
 
 		const std::map<Automata::Symbol, AutomataNode<Type>*>& transitions() const {
@@ -149,7 +149,7 @@ namespace cliff {
 
 
 		NonDeterministeFiniteAutomataNode& create_node() {
-			return _memory_container.emplace<MemoryContainer<NonDeterministeFiniteAutomataNode>&>(_memory_container);
+			return _memory_container.emplace(_memory_container);
 		}
 
 		const std::vector<std::pair<Automata::Symbol, NonDeterministeFiniteAutomataNode*>>& transitions() const {

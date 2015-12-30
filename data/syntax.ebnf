@@ -1,4 +1,13 @@
-root := function;
+white_space := #[:white:]#;
+comment := '\*' any_caracter_except_end_comment '*\' | '\\' any_caracter_except_new_line new_line;
+
+multi any_caracter_except_end_comment
+multi any_caracter_except_new_line
+
+ignore white_space except literal_string;
+ignore comment except literal_string;
+
+root := function; //root keyword ?
 
 function := function_qualifier identifier '(' [parameter_list]? ')' [':' parameter_list]? statement;
 
@@ -6,4 +15,4 @@ statement := instruction | '{' [instruction]* '}';
 
 instruction := 'ok' [';']?;
 
-identifier := #[:alpha:][:alnum]*#
+identifier := #[:alpha:][[:alnum]_]*#;

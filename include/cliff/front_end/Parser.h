@@ -1,6 +1,8 @@
 #ifndef _CLIFF_PARSER_H
 #define _CLIFF_PARSER_H
 
+#include <stack>
+
 #include "cliff/front_end/Syntax.h"
 #include "cliff/shared/MemoryContainer.h"
 #include "cliff/shared/AbstractSyntaxTree.h"
