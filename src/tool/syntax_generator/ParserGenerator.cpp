@@ -211,11 +211,12 @@ void ParserGenerator::generate_parser(const Syntax& ebnf_syntax, Syntax& output_
 	for(unsigned int set_index = 0; set_index < set_list.size(); set_index++) {
 
 		for(auto it_symbol = output_syntax.begin_terminal(); it_symbol != output_syntax.end_terminal(); ++it_symbol) {
-			output_syntax.parser_goto_table()[(it_symbol-output_syntax.begin_terminal())*set_list.size()+set_index] = Syntax::Parser_unaccepting_state;
+			output_syntax.parser_action_table()[(it_symbol-output_syntax.begin_terminal())*set_list.size()+set_index] = Syntax::Parser_unaccepting_state;
+			output_syntax.parser_reduce_number()[(it_symbol-output_syntax.begin_terminal())*set_list.size()+set_index] = 0;
 		}
 
 		for(auto it_symbol = output_syntax.begin_non_terminal(); it_symbol != output_syntax.end_non_terminal(); ++it_symbol) {
-			output_syntax.parser_action_table()[(it_symbol-output_syntax.begin_non_terminal())*set_list.size()+set_index] = Syntax::Parser_unaccepting_state;
+			output_syntax.parser_goto_table()[(it_symbol-output_syntax.begin_non_terminal())*set_list.size()+set_index] = Syntax::Parser_unaccepting_state;
 		}
 
 		for(const Item& item : set_list[set_index].item_list) {
@@ -225,12 +226,14 @@ void ParserGenerator::generate_parser(const Syntax& ebnf_syntax, Syntax& output_
 				if(item.next_token == output_syntax.get_symbol_from_name(Syntax::EOF_symbol) && item.rule.left_member == output_syntax.get_symbol_from_name(Syntax::Root_symbol))
 					output_syntax.parser_action_table()[output_syntax.index_of_symbol(item.next_token)*set_list.size()+set_index] = Syntax::Parser_action_accept_mask;
 				else {
+					std::cout << output_syntax.index_of_symbol(item.next_token) << ", " << set_index << ", " << set_list.size() << std::endl;
 					output_syntax.parser_action_table()[output_syntax.index_of_symbol(item.next_token)*set_list.size()+set_index] = Syntax::Parser_action_reduce_mask | output_syntax.index_of_symbol(item.rule.left_member);
 					output_syntax.parser_reduce_number()[output_syntax.index_of_symbol(item.next_token)*set_list.size()+set_index] = item.rule.word_list.size();
 				}
 			}
 			else if(item.rule.word_list[item.cursor].is_terminal && (j = find_goto(ebnf_syntax, output_syntax, rule_list, set_list[set_index], item.rule.word_list[item.cursor].content, set_list)) != -1) {
 				//std::cout << set_index << ", " << item.rule.word_list[item.cursor].content.string() << " => s " << j << std::endl;
+				std::cout << item.rule.word_list[item.cursor].content.string() << ", " << set_index << ", " << set_list.size() << std::endl;
 				output_syntax.parser_action_table()[output_syntax.index_of_symbol(item.rule.word_list[item.cursor].content)*set_list.size()+set_index] = Syntax::Parser_action_shift_mask | j;
 			}
 		}

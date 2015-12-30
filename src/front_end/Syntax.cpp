@@ -72,9 +72,9 @@ void Syntax::load(const char* filename) {
 
 	set_parser_table(parser_state_number);
 
-	file.read((char*)_action_table, _parser_state_number*(_symbol_number-_symbol_non_terminal_start)*sizeof(Index));
-	file.read((char*)_reduce_number, _parser_state_number*(_symbol_number-_symbol_non_terminal_start)*sizeof(Index));
-	file.read((char*)_goto_table, _parser_state_number*_symbol_non_terminal_start*sizeof(Index));
+	file.read((char*)_action_table, _parser_state_number*_symbol_non_terminal_start*sizeof(Index));
+	file.read((char*)_reduce_number, _parser_state_number*_symbol_non_terminal_start*sizeof(Index));
+	file.read((char*)_goto_table, _parser_state_number*(_symbol_number-_symbol_non_terminal_start)*sizeof(Index));
 
 	file.close();
 }
@@ -106,9 +106,9 @@ void Syntax::save(const char* filename) {
 	uint32_t parser_state_number = _parser_state_number;
 	file.write((char*)&parser_state_number, sizeof(uint32_t));
 
-	file.write((char*)_action_table, _parser_state_number*(_symbol_number-_symbol_non_terminal_start)*sizeof(Index));
-	file.write((char*)_reduce_number, _parser_state_number*(_symbol_number-_symbol_non_terminal_start)*sizeof(Index));
-	file.write((char*)_goto_table, _parser_state_number*_symbol_non_terminal_start*sizeof(Index));
+	file.write((char*)_action_table, _parser_state_number*_symbol_non_terminal_start*sizeof(Index));
+	file.write((char*)_reduce_number, _parser_state_number*_symbol_non_terminal_start*sizeof(Index));
+	file.write((char*)_goto_table, _parser_state_number*(_symbol_number-_symbol_non_terminal_start)*sizeof(Index));
 
 	file.close();
 }
@@ -123,6 +123,7 @@ void Syntax::set_symbol_table(std::vector<const char*> symbols, unsigned int ter
 	_symbol_non_terminal_start = terminal_range;
 
 	for(unsigned int i = 0; i<symbols.size(); i++) {
+		std::cout << "#" << i << " : " << symbols[i] << std::endl;
 		new(_symbol_table+i) TokenSymbol(symbols[i]);
 		_symbols_index.insert(std::make_pair(_symbol_table[i].string(), i));
 	}
@@ -228,9 +229,9 @@ unsigned int Syntax::parser_reduce_number(State current_state, const TokenSymbol
 }
 
 void Syntax::set_parser_table(unsigned int state_number) {
-	_action_table = new Index[state_number*(_symbol_number-_symbol_non_terminal_start)];
-	_reduce_number = new Index[state_number*(_symbol_number-_symbol_non_terminal_start)];
-	_goto_table = new Index[state_number*_symbol_non_terminal_start];
+	_action_table = new Index[state_number*_symbol_non_terminal_start];
+	_reduce_number = new Index[state_number*_symbol_non_terminal_start];
+	_goto_table = new Index[state_number*(_symbol_number-_symbol_non_terminal_start)];
 	_parser_state_number = state_number;
 }
 
