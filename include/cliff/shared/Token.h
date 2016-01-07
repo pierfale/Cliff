@@ -13,6 +13,7 @@ namespace cliff {
 		TokenSymbol(const char* owner_string);
 		TokenSymbol(const char* owner_string, unsigned int size);
 		TokenSymbol(const TokenSymbol& that) = delete;
+		TokenSymbol(TokenSymbol&& that);
 		~TokenSymbol();
 
 		const char* string() const;

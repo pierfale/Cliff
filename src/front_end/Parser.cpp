@@ -29,23 +29,30 @@ AbstractSyntaxTree& Parser::execute(const std::vector<Token>& input, MemoryConta
 			THROW(exception::Exception, "Parser : Unrecognized input");
 
 		if(next_action & Syntax::Parser_action_reduce_mask) {
-			const TokenSymbol& left_member = _syntax.parser_reduce_symbol(current_state, input[token_cursor].type());
-			AbstractSyntaxTree& current_tree = tree_memory.emplace(tree_memory, left_member);
+
 			unsigned int n_child = _syntax.parser_reduce_number(current_state, input[token_cursor].type());
 
-			std::vector<AbstractSyntaxTree*> children;
-			children.reserve(n_child);
-			for(unsigned int i=0; i<n_child; i++) {
-				children.push_back(tree_stack.top());
-				tree_stack.pop();
-				state_stack.pop();
+			if(next_action & Syntax::Parser_action_unbound_state_mask) {
+
 			}
+			else {
+				const TokenSymbol& left_member = _syntax.parser_reduce_symbol(current_state, input[token_cursor].type());
+				AbstractSyntaxTree& current_tree = tree_memory.emplace(tree_memory, left_member);
 
-			for(int i=n_child-1; i>=0; i--)
-				current_tree.add_child(children[i]);
+				std::vector<AbstractSyntaxTree*> children;
+				children.reserve(n_child);
+				for(unsigned int i=0; i<n_child; i++) {
+					children.push_back(tree_stack.top());
+					tree_stack.pop();
+					state_stack.pop();
+				}
 
-			tree_stack.push(&current_tree);
-			state_stack.push(_syntax.next_parser_goto(state_stack.top(), left_member));
+				for(int i=n_child-1; i>=0; i--)
+					current_tree.add_child(children[i]);
+
+				tree_stack.push(&current_tree);
+				state_stack.push(_syntax.next_parser_goto(state_stack.top(), left_member));
+			}
 		}
 		else if(next_action & Syntax::Parser_action_shift_mask) {
 			AbstractSyntaxTree& current_tree = tree_memory.emplace(tree_memory, input[token_cursor]);

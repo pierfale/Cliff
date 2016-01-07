@@ -15,6 +15,11 @@ TokenSymbol::TokenSymbol(const char* owner_string, unsigned int size) : _string(
 	std::memcpy(_string, owner_string, _size+1);
 }
 
+TokenSymbol::TokenSymbol(TokenSymbol&& that) : _string(that._string), _size(that._size) {
+	that._string = nullptr;
+	that._size = 0;
+}
+
 TokenSymbol::~TokenSymbol() {
 	delete[] _string;
 }

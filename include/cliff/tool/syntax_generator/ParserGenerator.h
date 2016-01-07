@@ -2,46 +2,23 @@
 #define _CLIFF_PARSER_GENERATOR_H
 
 #include <algorithm>
+#include <stack>
+
 #include "cliff/front_end/Syntax.h"
 #include "cliff/shared/AbstractSyntaxTree.h"
+#include "cliff/tool/syntax_generator/SyntaxRepresentation.h"
 
 namespace cliff {
 
 	class ParserGenerator {
 
 	public:
-		static void generate_parser(const Syntax& ebnf_syntax, const AbstractSyntaxTree& syntax_tree, Syntax& output_syntax);
+		static void generate_parser(const Syntax& ebnf_syntax, Syntax& output_syntax, SyntaxRepresentation& syntax_representation);
 
 	private:
-		struct Word {
-			Word(bool is_terminal_, const TokenSymbol& content_) : is_terminal(is_terminal_), content(content_) {
-
-			}
-
-			bool operator==(const Word& that) const {
-				return &content == &that.content;
-			}
-
-			bool is_terminal;
-			const TokenSymbol& content;
-		};
-
-		struct Rule {
-
-			Rule(const TokenSymbol& left_member_) : left_member(left_member_) {
-
-			}
-
-			bool operator==(const Rule& that) const {
-				return word_list.size() == that.word_list.size() && std::equal(std::begin(word_list), std::end(word_list), std::begin(that.word_list));
-			}
-
-			const TokenSymbol& left_member;
-			std::vector<Word> word_list;
-		};
 
 		struct Item {
-			Item(const Rule& rule_, unsigned int cursor_, const TokenSymbol& next_token_) : rule(rule_), cursor(cursor_), next_token(next_token_) {
+			Item(const SyntaxRepresentation::InlinedAlternative& rule_, unsigned int cursor_, const TokenSymbol& next_token_) : rule(&rule_), cursor(cursor_), next_token(&next_token_) {
 
 			}
 
@@ -49,13 +26,58 @@ namespace cliff {
 
 			}
 
+			Item& operator=(const Item&& that) {
+				rule = that.rule;
+				cursor = that.cursor;
+				next_token = that.next_token;
+			}
+
 			bool operator==(const Item& that) const {
 				return rule == that.rule && cursor == that.cursor && next_token == that.next_token;
 			}
 
-			const Rule& rule;
+			bool operator<(const Item& that) const {
+				return rule < that.rule ||
+						(rule == that.rule && cursor < that.cursor ||
+						(cursor == that.cursor && next_token < that.next_token));
+			}
+
+			void following_symbols(std::vector<SyntaxRepresentation::Symbol>& output) const {
+				if(cursor < rule->sequence().size())
+					output.push_back(rule->sequence()[cursor]);
+				else if(rule->has_unbound_repetition())
+					output.push_back(rule->sequence()[0]);
+			}
+
+			void consume(const TokenSymbol& symbol,  std::vector<Item>& output) const {
+				if(cursor < rule->sequence().size()) {
+					if(rule->sequence()[cursor].content() == symbol)
+						output.emplace_back(*rule, cursor+1, *next_token);
+				}
+				else if(rule->has_unbound_repetition()) {
+					if(rule->sequence()[0].content() == symbol)
+						output.emplace_back(*rule, 0, *next_token);
+				}
+			}
+
+			void print(std::ostream& stream) const {
+				stream << rule->rule_name().string() << " :=";
+
+				for(unsigned int i=0; i<rule->sequence().size(); i++) {
+					if(cursor == i)
+						stream << " @";
+
+					stream << " " << rule->sequence()[i].content().string();
+				}
+				if(cursor == rule->sequence().size())
+					stream << " @";
+
+				stream << ", " << next_token->string() << std::endl;
+			}
+
+			const SyntaxRepresentation::InlinedAlternative* rule;
 			unsigned int cursor;
-			const TokenSymbol& next_token;
+			const TokenSymbol* next_token;
 		};
 
 		struct Set {
@@ -68,6 +90,11 @@ namespace cliff {
 
 			}
 
+			void erase_duplicate() {
+				std::sort(std::begin(item_list), std::end(item_list));
+				item_list.erase(std::unique(std::begin(item_list), std::end(item_list)), std::end(item_list));
+			}
+
 			bool operator==(const Set& that) const {
 				return item_list.size() == that.item_list.size() && std::is_permutation(std::begin(item_list), std::end(item_list), std::begin(that.item_list));
 			}
@@ -78,18 +105,11 @@ namespace cliff {
 
 		};
 
-		typedef std::map<const TokenSymbol*, std::vector<Rule>> RuleList;
-
-		static void construct_rule_list(const Syntax& ebnf_syntax, const Syntax& generated_syntax, const AbstractSyntaxTree& syntax_tree, RuleList& rule_list, const char** main_rule);
-		static void construct_rule(const Syntax& ebnf_syntax, const Syntax& generated_syntax, const AbstractSyntaxTree& syntax_tree, Rule& rule);
-		static void construct_closure_set(const Syntax& ebnf_syntax, const Syntax& generated_syntax, const RuleList& rule_list, std::vector<Set>& output);
-		static void closure_procedure(const Syntax& ebnf_syntax, const Syntax& generated_syntax, const RuleList& rule_list, Set& output_set);
-		static void goto_procedure(const Syntax& ebnf_syntax, const Syntax& generated_syntax, const RuleList& rule_list, const Set& input_set, const TokenSymbol& symbol, Set& output_set);
-		static void get_first(const Syntax& ebnf_syntax, const RuleList& rule_list, const Word& word, std::vector<const TokenSymbol*>& output);
-		static void _get_first(const Syntax& ebnf_syntax, const RuleList& rule_list, const Word& word, std::vector<const TokenSymbol*>& output, std::vector<const TokenSymbol*>& history);
-		static bool is_epsilon_productive(const Syntax& ebnf_syntax, const RuleList& rule_list, const Word& word);
-		static void generate_parser(const Syntax& ebnf_syntax, Syntax& output_syntax, const RuleList& rule_list, const std::vector<Set>& set_list);
-		static int find_goto(const Syntax& ebnf_syntax, const Syntax& generated_syntax, const RuleList& rule_list, const Set& input_set, const TokenSymbol& symbol, const std::vector<Set>& set_list);
+		static void construct_closure_set(const Syntax& ebnf_syntax, const Syntax& generated_syntax, const SyntaxRepresentation& syntax_representation, std::vector<Set>& output);
+		static void closure_procedure(const Syntax& ebnf_syntax, const Syntax& generated_syntax, const SyntaxRepresentation& syntax_representation, Set& output_set);
+		static void goto_procedure(const Syntax& ebnf_syntax, const Syntax& generated_syntax, const SyntaxRepresentation& syntax_representation, const Set& input_set, const TokenSymbol& symbol, Set& output_set);
+		static void generate_parser(const Syntax& ebnf_syntax, Syntax& output_syntax, const SyntaxRepresentation& syntax_representation, const std::vector<Set>& set_list);
+		static int find_goto(const Syntax& ebnf_syntax, const Syntax& generated_syntax, const SyntaxRepresentation& syntax_representation, const Set& input_set, const TokenSymbol& symbol, const std::vector<Set>& set_list);
 
 	};
 }

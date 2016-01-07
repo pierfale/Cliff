@@ -27,9 +27,10 @@ namespace cliff {
 
 		static const State Parser_init_state;
 		static const Index Parser_unaccepting_state = 0xFFFFFFFF;
-		static const Index Parser_action_shift_mask = 0x40000000;
-		static const Index Parser_action_reduce_mask = 0x20000000;
-		static const Index Parser_action_accept_mask = 0x10000000;
+		static const Index Parser_action_shift_mask = 0x80000000;
+		static const Index Parser_action_reduce_mask = 0x40000000;
+		static const Index Parser_action_accept_mask = 0x20000000;
+		static const Index Parser_action_unbound_state_mask = 0x10000000;
 		static const Index Parser_action_content_mask = 0xFFFFFF;
 
 		Syntax();

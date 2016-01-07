@@ -10,7 +10,7 @@ namespace cliff {
 	namespace exception {
 
 #ifdef _WIN32
-#define LAUNCH_BREAKPOINT //__debugbreak();
+#define LAUNCH_BREAKPOINT __debugbreak();
 #else
 #define LAUNCH_BREAKPOINT
 #endif

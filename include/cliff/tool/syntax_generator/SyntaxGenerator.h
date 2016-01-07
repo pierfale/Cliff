@@ -15,6 +15,7 @@
 #include "cliff/shared/AbstractSyntaxTree.h"
 #include "cliff/tool/syntax_generator/LexerGenerator.h"
 #include "cliff/tool/syntax_generator/ParserGenerator.h"
+#include "cliff/tool/syntax_generator/SyntaxRepresentation.h"
 
 namespace cliff {
 
