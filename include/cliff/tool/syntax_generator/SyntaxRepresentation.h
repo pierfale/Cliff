@@ -25,8 +25,8 @@ namespace cliff {
 				NonTerminal
 			};
 
-			RuleDefinition(RuleDefinition* parent, unsigned int parent_relative_position, Type type);
-			RuleDefinition(RuleDefinition* parent, unsigned int parent_relative_position, Type type, const TokenSymbol* symbol);
+			RuleDefinition(Type type);
+			RuleDefinition(Type type, const TokenSymbol* symbol);
 			RuleDefinition(const RuleDefinition& that) = delete;
 			RuleDefinition(RuleDefinition&& that);
 
