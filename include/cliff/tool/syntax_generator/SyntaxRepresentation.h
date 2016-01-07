@@ -25,15 +25,13 @@ namespace cliff {
 				NonTerminal
 			};
 
-			RuleDefinition(Type type);
-			RuleDefinition(Type type, const TokenSymbol* symbol);
+			RuleDefinition(Type type, bool unbound_repetition = false);
+			RuleDefinition(Type type, const TokenSymbol* symbol, bool unbound_repetition = false);
 			RuleDefinition(const RuleDefinition& that) = delete;
 			RuleDefinition(RuleDefinition&& that);
 
 			RuleDefinition& add_child(Type type);
 			RuleDefinition& add_child(Type type, const TokenSymbol* symbol);
-
-			std::pair<const RuleDefinition*, unsigned int> adjust(unsigned int cursor_position) const;
 
 			bool is_epsilon_productive(const SyntaxRepresentation& syntax_representation, unsigned int start_position = 0, bool expend_non_terminal = true) const;
 			void next_definition_of_type_list(const SyntaxRepresentation& syntax_representation, unsigned int cursor, Type type, std::vector<const RuleDefinition*>& output) const;
@@ -43,8 +41,8 @@ namespace cliff {
 			std::vector<RuleDefinition>& list();
 			const std::vector<RuleDefinition>& list() const;
 
-			const RuleDefinition* parent() const;
-			unsigned int parent_relative_position() const;
+
+			bool unbound_repetition() const;
 			Type type() const;
 			const TokenSymbol& content() const;
 
@@ -54,8 +52,7 @@ namespace cliff {
 			bool _is_epsilon_productive(const SyntaxRepresentation& syntax_representation, unsigned int start_position, bool expend_non_terminal, std::map<const TokenSymbol*, bool>& history) const;
 			bool _first_list(const SyntaxRepresentation& syntax_representation, unsigned int cursor, std::vector<const TokenSymbol*>& output, std::map<const TokenSymbol*, bool>& history) const;
 
-			RuleDefinition* _parent;
-			unsigned int _parent_relative_position;
+			bool _unbound_repetition;
 			Type _type;
 			const TokenSymbol* _symbol;
 			std::vector<RuleDefinition> _rule_list;
@@ -86,6 +83,7 @@ namespace cliff {
 			void first_after(const SyntaxRepresentation& syntax_representation, unsigned int position, std::vector<const TokenSymbol*>& output) const;
 			bool is_epsilon_productive(const SyntaxRepresentation& syntax_representation, unsigned int position) const;
 
+			bool unbound_repetition() const;
 			const std::vector<Symbol>& sequence() const;
 			const TokenSymbol& rule_name() const;
 			bool has_unbound_repetition() const;
@@ -105,15 +103,16 @@ namespace cliff {
 			friend class InlinedAlternative;
 
 		public:
-			Rule(const TokenSymbol& rule_name);
-			Rule(const TokenSymbol& rule_name, RuleDefinition::Type root_type);
-			Rule(const TokenSymbol& rule_name, RuleDefinition::Type root_type, const TokenSymbol* root_symbol);
+			Rule(const TokenSymbol& rule_name, bool unbound_repetition = false);
+			Rule(const TokenSymbol& rule_name, RuleDefinition::Type root_type, bool unbound_repetition = false);
+			Rule(const TokenSymbol& rule_name, RuleDefinition::Type root_type, const TokenSymbol* root_symbol, bool unbound_repetition = false);
 
 			void add_alternative(const std::vector<Symbol>& rule_definition);
 			void first(const SyntaxRepresentation& syntax_representation, std::vector<const TokenSymbol*>& output) const;
 			bool is_epsilon_productive(const SyntaxRepresentation& syntax_representation) const;
 
 
+			bool unbound_repetition() const;
 			const TokenSymbol& rule_name() const;
 			const std::vector<InlinedAlternative>& alternatives() const;
 
@@ -125,6 +124,7 @@ namespace cliff {
 			void _first(const SyntaxRepresentation& syntax_representation, std::vector<const TokenSymbol*>& output, std::vector<const TokenSymbol*>& history) const;
 			bool _is_epsilon_productive(const SyntaxRepresentation& syntax_representation, std::vector<const TokenSymbol*>& history) const;
 
+			bool _unbound_repetition;
 			const TokenSymbol& _rule_name;
 			RuleDefinition _root_rule_definition; // TODO remove
 			std::vector<InlinedAlternative> _alternative_list;
