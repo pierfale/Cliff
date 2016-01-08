@@ -36,8 +36,8 @@ void SyntaxGenerator::execute(ProgramOption::Iterator option_caller) {
 
 	std::cout << "Abstract Syntax Tree : " << std::endl;
 	root.print(std::cout);
-	std::cout << std::endl;*/
-
+	std::cout << std::endl;
+*/
 	//
 	//	TMP
 	//

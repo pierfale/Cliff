@@ -56,7 +56,7 @@ namespace cliff {
 				}
 				else if(rule->has_unbound_repetition()) {
 					if(rule->sequence()[0].content() == symbol)
-						output.emplace_back(*rule, 0, *next_token);
+						output.emplace_back(*rule, 1, *next_token);
 				}
 			}
 

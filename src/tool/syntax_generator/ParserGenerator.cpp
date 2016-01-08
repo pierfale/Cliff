@@ -122,19 +122,29 @@ void ParserGenerator::generate_parser(const Syntax& ebnf_syntax, Syntax& output_
 			if(item.cursor == item.rule->sequence().size()) {
 
 				if(item.rule->unbound_repetition()) { // repetition
-					std::cout << "[" << item.rule->sequence()[0].content().string() << ";" << set_index << "] s " << find_goto(ebnf_syntax, output_syntax, syntax_representation, set_list[set_index], item.rule->sequence()[0].content(), set_list) << std::endl;
+					std::cout << "[" << item.rule->sequence()[0].content().string() << ";" << set_index << "] s* " << find_goto(ebnf_syntax, output_syntax, syntax_representation, set_list[set_index], item.rule->sequence()[0].content(), set_list) << std::endl;
+					j = find_goto(ebnf_syntax, output_syntax, syntax_representation, set_list[set_index], item.rule->sequence()[0].content(), set_list);
+					output_syntax.parser_action_table()[output_syntax.index_of_symbol(item.rule->sequence()[0].content())*set_list.size()+set_index] = Syntax::Parser_action_shift_mask | j;
+				}
+
+
+				if(*item.next_token == output_syntax.get_symbol_from_name(Syntax::EOF_symbol) && item.rule->rule_name() == output_syntax.get_symbol_from_name(Syntax::Root_symbol)) {
+					std::cout << "[" << item.next_token->string() << ";" << set_index << "] accept" << std::endl;
+					output_syntax.parser_action_table()[output_syntax.index_of_symbol(*item.next_token)*set_list.size()+set_index] = Syntax::Parser_action_accept_mask;
 				}
 				else {
-					if(*item.next_token == output_syntax.get_symbol_from_name(Syntax::EOF_symbol) && item.rule->rule_name() == output_syntax.get_symbol_from_name(Syntax::Root_symbol)) {
-						std::cout << "[" << item.next_token->string() << ";" << set_index << "] accept" << std::endl;
-						output_syntax.parser_action_table()[output_syntax.index_of_symbol(*item.next_token)*set_list.size()+set_index] = Syntax::Parser_action_accept_mask;
+					std::cout << "[" << item.next_token->string() << ";" << set_index << "] r " << item.rule->rule_name().string() << "(" << item.rule->sequence().size() << ")" << (item.rule->has_unbound_repetition() ? "*" : "") << std::endl;
+
+					unsigned int reduce_symbol_index = 0;
+
+					if(item.rule->unbound_repetition()) {
+						reduce_symbol_index = output_syntax.index_of_symbol(*item.rule->parent_rule_name());
 					}
-					else {
-						std::cout << "[" << item.next_token->string() << ";" << set_index << "] r " << item.rule->rule_name().string() << "(" << item.rule->sequence().size() << ")" << (item.rule->has_unbound_repetition() ? "*" : "") << std::endl;
-						output_syntax.parser_action_table()[output_syntax.index_of_symbol(*item.next_token)*set_list.size()+set_index] = Syntax::Parser_action_reduce_mask
-								| (item.rule->has_unbound_repetition() ? Syntax::Parser_action_unbound_state_mask : output_syntax.index_of_symbol(item.rule->rule_name()));
-						output_syntax.parser_reduce_number()[output_syntax.index_of_symbol(*item.next_token)*set_list.size()+set_index] = item.rule->sequence().size();
-					}
+					else
+						reduce_symbol_index = output_syntax.index_of_symbol(item.rule->rule_name());
+
+					output_syntax.parser_action_table()[output_syntax.index_of_symbol(*item.next_token)*set_list.size()+set_index] = Syntax::Parser_action_reduce_mask | reduce_symbol_index;
+					output_syntax.parser_reduce_number()[output_syntax.index_of_symbol(*item.next_token)*set_list.size()+set_index] = item.rule->sequence().size();
 				}
 			}
 			else if(item.rule->sequence()[item.cursor].is_terminal() && (j = find_goto(ebnf_syntax, output_syntax, syntax_representation, set_list[set_index], item.rule->sequence()[item.cursor].content(), set_list)) != -1) {

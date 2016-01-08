@@ -24,6 +24,8 @@ AbstractSyntaxTree& Parser::execute(const std::vector<Token>& input, MemoryConta
 
 		Syntax::State current_state = state_stack.top();
 
+		std::cout << input[token_cursor].type().string() << "-" << current_state << std::endl;
+
 		Syntax::Index next_action = _syntax.next_parser_action(current_state, input[token_cursor].type());
 		if(next_action == Syntax::Parser_unaccepting_state)
 			THROW(exception::Exception, "Parser : Unrecognized input");
@@ -32,13 +34,14 @@ AbstractSyntaxTree& Parser::execute(const std::vector<Token>& input, MemoryConta
 
 			unsigned int n_child = _syntax.parser_reduce_number(current_state, input[token_cursor].type());
 
-			if(next_action & Syntax::Parser_action_unbound_state_mask) {
 
+			if(next_action & Syntax::Parser_action_unbound_state_mask) {
+				std::cout << "unbound reduce " << std::endl;
 			}
 			else {
 				const TokenSymbol& left_member = _syntax.parser_reduce_symbol(current_state, input[token_cursor].type());
 				AbstractSyntaxTree& current_tree = tree_memory.emplace(tree_memory, left_member);
-
+				std::cout << "reduce " << left_member.string() << " of " << n_child << std::endl;
 				std::vector<AbstractSyntaxTree*> children;
 				children.reserve(n_child);
 				for(unsigned int i=0; i<n_child; i++) {
@@ -55,11 +58,11 @@ AbstractSyntaxTree& Parser::execute(const std::vector<Token>& input, MemoryConta
 			}
 		}
 		else if(next_action & Syntax::Parser_action_shift_mask) {
+			std::cout << "shift " << input[token_cursor].type().string() << " to " << (next_action & Syntax::Parser_action_content_mask) << std::endl;
 			AbstractSyntaxTree& current_tree = tree_memory.emplace(tree_memory, input[token_cursor]);
 			tree_stack.push(&current_tree);
 			token_cursor++;
 			state_stack.push(next_action & Syntax::Parser_action_content_mask);
-
 
 		}
 		else if(next_action & Syntax::Parser_action_accept_mask) {
