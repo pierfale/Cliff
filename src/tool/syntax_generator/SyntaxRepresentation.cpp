@@ -75,12 +75,16 @@ void SyntaxRepresentation::construct_rule(const Syntax& ebnf_syntax, const Synta
 		std::string rule_name = "rule_temporary_"+std::to_string(temporary_rule_name.size()+1);
 		const TokenSymbol& temporary_rule_symbol = temporary_rule_name.emplace(std::piecewise_construct, std::forward_as_tuple(rule_name.c_str()), std::forward_as_tuple(nullptr)).first->first;
 		auto rule_it = rule_list.emplace(std::piecewise_construct, std::forward_as_tuple(&temporary_rule_symbol), std::forward_as_tuple(RuleDefinition::Alternative, &current_rule_name, true)).first;
-		RuleDefinition& element = rule_it->second.add_child(RuleDefinition::Sequence, &temporary_rule_symbol);
+		RuleDefinition& element = rule_it->second.add_child(RuleDefinition::Sequence);
 		for(const AbstractSyntaxTree* child : current_node.children())
 			construct_rule(ebnf_syntax, generated_syntax, rule_list, *child, element, current_rule_name);
 
-		RuleDefinition& element2 = rule_it->second.add_child(RuleDefinition::NonTerminal, &temporary_rule_symbol);
-		std::copy(std::begin(element.list()), std::end(element.list()), std::back_inserter(element2.list()));
+		RuleDefinition& element2 = rule_it->second.add_child(RuleDefinition::Sequence);
+		element2.add_child(RuleDefinition::NonTerminal, &temporary_rule_symbol);
+
+		RuleDefinition& first_element = rule_it->second.list().front();
+
+		std::copy(std::begin(first_element.list()), std::end(first_element.list()), std::back_inserter(element2.list()));
 
 		current_rule.add_child(RuleDefinition::NonTerminal, &temporary_rule_symbol);
 //		temporary_rule_name[temporary_rule_symbol] = &element.list().back().content();
@@ -157,7 +161,7 @@ SyntaxRepresentation::RuleDefinition::RuleDefinition(Type type, const TokenSymbo
 }
 
 SyntaxRepresentation::RuleDefinition::RuleDefinition(const RuleDefinition& that) : _unbound_repetition(that._unbound_repetition), _type(that._type), _symbol(that._symbol), _parent_rule_name(that._parent_rule_name), _rule_list(that._rule_list) {
-
+	std::cout << "copy " << (_symbol == nullptr ? "_" : _symbol->string()) << ":" << _rule_list.size() << std::endl;
 }
 
 SyntaxRepresentation::RuleDefinition::RuleDefinition(RuleDefinition&& that) : _type(that._type), _symbol(that._symbol), _rule_list(std::move(that._rule_list)){
@@ -183,7 +187,7 @@ std::vector<SyntaxRepresentation::RuleDefinition>& SyntaxRepresentation::RuleDef
 	return _rule_list;
 }
 
-const std::vector<SyntaxRepresentation::RuleDefinition>& SyntaxRepresentation::RuleDefinition::list() const {
+const std::vector<SyntaxRepresentation::RuleDefinition>& SyntaxRepresentation::RuleDefinition::       list() const {
 	return _rule_list;
 }
 

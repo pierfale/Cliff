@@ -143,10 +143,10 @@ void ParserGenerator::generate_parser(const Syntax& ebnf_syntax, Syntax& output_
 
 					if(syntax_representation.is_temporary_symbol_value(item.rule->rule_name())) {
 						std::cout << "[" << item.next_token->string() << ";" << set_index << "] r* " << item.rule->parent_rule_name()->string() << "(" << item.rule->sequence().size() << ")" << std::endl;
-						//output_syntax.parser_action_table()[output_syntax.index_of_symbol(*item.next_token)*set_list.size()+set_index] = Syntax::Parser_action_reduce_mask | output_syntax.index_of_symbol(*item.rule->parent_rule_name()); // TODO : more than 1 symbol in repetition
-						j = find_goto(ebnf_syntax, output_syntax, syntax_representation, set_list[set_index], *item.next_token, set_list);
+						output_syntax.parser_action_table()[output_syntax.index_of_symbol(*item.next_token)*set_list.size()+set_index] = Syntax::Parser_action_reduce_mask | output_syntax.index_of_symbol(*item.rule->parent_rule_name()); // TODO : more than 1 symbol in repetition
+						/*j = find_goto(ebnf_syntax, output_syntax, syntax_representation, set_list[set_index], *item.next_token, set_list);
 						std::cout << "transform to s " << j << " \"" << item.next_token->string() << "\"" << std::endl;
-						output_syntax.parser_action_table()[output_syntax.index_of_symbol(*item.next_token)*set_list.size()+set_index] = Syntax::Parser_action_shift_mask | j;
+						output_syntax.parser_action_table()[output_syntax.index_of_symbol(*item.next_token)*set_list.size()+set_index] = Syntax::Parser_action_shift_mask | j;*/
 					}
 					else
 						output_syntax.parser_action_table()[output_syntax.index_of_symbol(*item.next_token)*set_list.size()+set_index] = Syntax::Parser_action_reduce_mask | output_syntax.index_of_symbol(item.rule->rule_name());
@@ -180,7 +180,7 @@ void ParserGenerator::generate_parser(const Syntax& ebnf_syntax, Syntax& output_
 		for(const auto& symbol : syntax_representation.temporary_rule_name) {
 			int j;
 			if((j = find_goto(ebnf_syntax, output_syntax, syntax_representation, set_list[set_index], symbol.first, set_list)) != -1) {
-				std::cout << "[" << syntax_representation.get_rule_by_symbol(symbol.first).parent_rule_name()->string() << ";" << set_index << "] goto* " << j << std::endl;
+				std::cout << "[" << symbol.first.string() << ";" << set_index << "] goto* " << j << std::endl;
 				output_syntax.parser_goto_table()[(syntax_representation.get_rule_by_symbol(symbol.first).parent_rule_name()-output_syntax.begin_non_terminal())*set_list.size()+set_index] = j;
 			}
 			else {

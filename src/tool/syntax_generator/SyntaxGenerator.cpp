@@ -288,10 +288,11 @@ void SyntaxGenerator::execute(ProgramOption::Iterator option_caller) {
 	token_symbol_rule_2_1.add_child(Token(token_symbol_rule_non_terminal, "pair"));
 	AbstractSyntaxTree& token_symbol_rule_2_2 = token_symbol_rule_2_definition_alternative.add_child(token_symbol_rule_definition);
 	token_symbol_rule_2_2.add_child(Token(token_symbol_rule_non_terminal, "pair"));
-*/
 
+*/
 	AbstractSyntaxTree& token_symbol_rule_2_1_r = token_symbol_rule_2_1.add_child(token_symbol_rule_repetition);
 	token_symbol_rule_2_1_r.add_child(Token(token_symbol_rule_non_terminal, "pair"));
+
 
 	AbstractSyntaxTree& rule_3_node = rule_list_node.add_child(token_symbol_rule);
 	rule_3_node.add_child(Token(token_symbol_rule_name, "pair"));
