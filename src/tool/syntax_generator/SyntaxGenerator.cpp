@@ -290,20 +290,20 @@ void SyntaxGenerator::execute(ProgramOption::Iterator option_caller) {
 	token_symbol_rule_2_2.add_child(Token(token_symbol_rule_non_terminal, "pair"));
 */
 
-		AbstractSyntaxTree& token_symbol_rule_2_1_r = token_symbol_rule_2_1.add_child(token_symbol_rule_repetition);
-		token_symbol_rule_2_1_r.add_child(Token(token_symbol_rule_terminal, "a"));
-/*
+	AbstractSyntaxTree& token_symbol_rule_2_1_r = token_symbol_rule_2_1.add_child(token_symbol_rule_repetition);
+	token_symbol_rule_2_1_r.add_child(Token(token_symbol_rule_non_terminal, "pair"));
+
 	AbstractSyntaxTree& rule_3_node = rule_list_node.add_child(token_symbol_rule);
 	rule_3_node.add_child(Token(token_symbol_rule_name, "pair"));
 	rule_3_node.add_child(token_symbol_unamed_terminal);
 	AbstractSyntaxTree& token_symbol_rule_3_definition_alternative = rule_3_node.add_child(token_symbol_rule_definition_alternative);
-	AbstractSyntaxTree& token_symbol_rule_3_1 = token_symbol_rule_3_definition_alternative.add_child(token_symbol_rule_definition);
+	/*AbstractSyntaxTree& token_symbol_rule_3_1 = token_symbol_rule_3_definition_alternative.add_child(token_symbol_rule_definition);
 	token_symbol_rule_3_1.add_child(Token(token_symbol_rule_terminal, "("));
 	token_symbol_rule_3_1.add_child(Token(token_symbol_rule_non_terminal, "pair"));
-	token_symbol_rule_3_1.add_child(Token(token_symbol_rule_terminal, ")"));
+	token_symbol_rule_3_1.add_child(Token(token_symbol_rule_terminal, ")"));*/
 	AbstractSyntaxTree& token_symbol_rule_3_2 = token_symbol_rule_3_definition_alternative.add_child(token_symbol_rule_definition);
 	token_symbol_rule_3_2.add_child(Token(token_symbol_rule_terminal, "("));
-	token_symbol_rule_3_2.add_child(Token(token_symbol_rule_terminal, ")"));*/
+	token_symbol_rule_3_2.add_child(Token(token_symbol_rule_terminal, ")"));
 /*
 	AbstractSyntaxTree& rule_1_node = rule_list_node.add_child(token_symbol_rule);
 	rule_1_node.add_child(Token(token_symbol_rule_name, "identifier"));

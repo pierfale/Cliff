@@ -11,7 +11,7 @@ AbstractSyntaxTree& Parser::execute(const std::vector<Token>& input, MemoryConta
 	unsigned int token_cursor = 0;
 	std::stack<Syntax::State> state_stack;
 	std::stack<AbstractSyntaxTree*> tree_stack;
-
+	std::stack<unsigned int> repetiton_stack;
 	state_stack.push(Syntax::Parser_init_state);
 
 
@@ -34,28 +34,29 @@ AbstractSyntaxTree& Parser::execute(const std::vector<Token>& input, MemoryConta
 
 			unsigned int n_child = _syntax.parser_reduce_number(current_state, input[token_cursor].type());
 
-
 			if(next_action & Syntax::Parser_action_unbound_state_mask) {
-				std::cout << "unbound reduce " << std::endl;
+				n_child *= repetiton_stack.top();
+				repetiton_stack.pop();
 			}
-			else {
-				const TokenSymbol& left_member = _syntax.parser_reduce_symbol(current_state, input[token_cursor].type());
-				AbstractSyntaxTree& current_tree = tree_memory.emplace(tree_memory, left_member);
-				std::cout << "reduce " << left_member.string() << " of " << n_child << std::endl;
-				std::vector<AbstractSyntaxTree*> children;
-				children.reserve(n_child);
-				for(unsigned int i=0; i<n_child; i++) {
-					children.push_back(tree_stack.top());
-					tree_stack.pop();
-					state_stack.pop();
-				}
 
-				for(int i=n_child-1; i>=0; i--)
-					current_tree.add_child(children[i]);
-
-				tree_stack.push(&current_tree);
-				state_stack.push(_syntax.next_parser_goto(state_stack.top(), left_member));
+			const TokenSymbol& left_member = _syntax.parser_reduce_symbol(current_state, input[token_cursor].type());
+			AbstractSyntaxTree& current_tree = tree_memory.emplace(tree_memory, left_member);
+			std::cout << "reduce " << left_member.string() << " of " << n_child << std::endl;
+			std::vector<AbstractSyntaxTree*> children;
+			children.reserve(n_child);
+			for(unsigned int i=0; i<n_child; i++) {
+				children.push_back(tree_stack.top());
+				tree_stack.pop();
+				state_stack.pop();
 			}
+
+			for(int i=n_child-1; i>=0; i--)
+				current_tree.add_child(children[i]);
+
+			tree_stack.push(&current_tree);
+			std::cout << "goto " << state_stack.top() << ", " << left_member.string() << std::endl;
+			state_stack.push(_syntax.next_parser_goto(state_stack.top(), left_member));
+
 		}
 		else if(next_action & Syntax::Parser_action_shift_mask) {
 			std::cout << "shift " << input[token_cursor].type().string() << " to " << (next_action & Syntax::Parser_action_content_mask) << std::endl;
@@ -63,6 +64,17 @@ AbstractSyntaxTree& Parser::execute(const std::vector<Token>& input, MemoryConta
 			tree_stack.push(&current_tree);
 			token_cursor++;
 			state_stack.push(next_action & Syntax::Parser_action_content_mask);
+
+			if(next_action & Syntax::Parser_action_start_unbound_state_mask) {
+				std::cout << "PUSH REPETITION" << std::endl;
+				repetiton_stack.push(1);
+			}
+
+			else if(next_action & Syntax::Parser_action_unbound_state_mask) {
+				unsigned int n = repetiton_stack.top();
+				repetiton_stack.pop();
+				repetiton_stack.push(n+1);
+			}
 
 		}
 		else if(next_action & Syntax::Parser_action_accept_mask) {

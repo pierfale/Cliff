@@ -13,7 +13,7 @@ void ParserGenerator::generate_parser(const Syntax& ebnf_syntax, Syntax& output_
 	construct_closure_set(ebnf_syntax, output_syntax, syntax_representation, set_list);
 
 	for(const Set& set : set_list) {
-		std::cout << "====SET==== (" << set.predecessor_set << ",\"" << (set.transition_symbol != nullptr ? set.transition_symbol->string() : "none") << "\")" << std::endl;
+		std::cout << "====SET==== (" << set.predecessor_set << ",\"" << (set.transition_symbol != nullptr ? set.transition_symbol->string() : "none") << "\"" << std::endl;
 		for(const Item& item : set.item_list) {
 			item.print(std::cout);
 		}
@@ -32,13 +32,14 @@ void ParserGenerator::construct_closure_set(const Syntax& ebnf_syntax, const Syn
 		unchecked_set.pop_back();
 
 		for(const Item& item : current_set.item_list) {
-			std::vector<SyntaxRepresentation::Symbol> following_symbol;
+			std::vector<std::pair<SyntaxRepresentation::Symbol, bool>> following_symbol;
 			item.following_symbols(following_symbol);
-			for(const SyntaxRepresentation::Symbol& symbol : following_symbol) {
+			for(const std::pair<SyntaxRepresentation::Symbol, bool>& symbol : following_symbol) {
 				Set new_set;
-				new_set.transition_symbol = &symbol.content();
+				new_set.transition_symbol = &symbol.first.content();
 				new_set.predecessor_set = output.size()-1;
-				goto_procedure(ebnf_syntax, generated_syntax, syntax_representation, current_set, symbol.content(), new_set);
+				new_set.is_repetition = symbol.second;
+				goto_procedure(ebnf_syntax, generated_syntax, syntax_representation, current_set, symbol.first.content(), new_set);
 				if(std::find(std::begin(output), std::end(output), new_set) == std::end(output) && std::find(std::begin(unchecked_set), std::end(unchecked_set), new_set) == std::end(unchecked_set)) {
 					unchecked_set.push_back(new_set);
 				}
@@ -59,22 +60,34 @@ void ParserGenerator::closure_procedure(const Syntax& ebnf_syntax, const Syntax&
 
 		output_set.item_list.push_back(current_item);
 
-		std::vector<SyntaxRepresentation::Symbol> following_symbol;
+		std::vector<std::pair<SyntaxRepresentation::Symbol, bool>> following_symbol;
 		current_item.following_symbols(following_symbol);
 
-		for(const SyntaxRepresentation::Symbol& symbol : following_symbol) {
-			if(!symbol.is_terminal()) {
-				const SyntaxRepresentation::Rule& rule = syntax_representation.get_rule_by_symbol(symbol.content());
+		std::vector<const TokenSymbol*> first_list;
 
-				std::vector<const TokenSymbol*> first_list;
-				current_item.rule->first_after(syntax_representation, current_item.cursor+1, first_list);
+		current_item.rule->first_after(syntax_representation, current_item.cursor+1, first_list);
 
-				std::sort(std::begin(first_list), std::end(first_list));
-				first_list.erase(std::unique(std::begin(first_list), std::end(first_list)), std::end(first_list));
+		/*
+		 *	Repetition case
+		 */
+		if(current_item.cursor < current_item.rule->sequence().size()) {
+			const SyntaxRepresentation::Symbol& symbol = current_item.rule->sequence()[current_item.cursor];
+			if(!symbol.is_terminal() && syntax_representation.get_rule_by_symbol(symbol.content()).unbound_repetition()) {
+				current_item.rule->first_after(syntax_representation, current_item.cursor, first_list);
+			}
+		}
+
+		std::sort(std::begin(first_list), std::end(first_list));
+		first_list.erase(std::unique(std::begin(first_list), std::end(first_list)), std::end(first_list));
+
+
+		for(const std::pair<SyntaxRepresentation::Symbol, bool>& symbol : following_symbol) {
+			if(!symbol.first.is_terminal()) {
+				const SyntaxRepresentation::Rule& rule = syntax_representation.get_rule_by_symbol(symbol.first.content());
 
 				for(const SyntaxRepresentation::InlinedAlternative& alternative : rule.alternatives()) {
-					for(const TokenSymbol* symbol : first_list) {
-						Item new_item(alternative, 0, *symbol);
+					for(const TokenSymbol* first_symbol : first_list) {
+						Item new_item(alternative, 0, *first_symbol);
 						if(std::find(std::begin(output_set.item_list), std::end(output_set.item_list), new_item) == std::end(output_set.item_list)
 								&& std::find(std::begin(unchecked_item_list.item_list), std::end(unchecked_item_list.item_list), new_item) == std::end(unchecked_item_list.item_list))
 							unchecked_item_list.item_list.push_back(new_item);
@@ -107,7 +120,6 @@ void ParserGenerator::generate_parser(const Syntax& ebnf_syntax, Syntax& output_
 
 
 	for(unsigned int set_index = 0; set_index < set_list.size(); set_index++) {
-
 		for(auto it_symbol = output_syntax.begin_terminal(); it_symbol != output_syntax.end_terminal(); ++it_symbol) {
 			output_syntax.parser_action_table()[(it_symbol-output_syntax.begin_terminal())*set_list.size()+set_index] = Syntax::Parser_unaccepting_state;
 			output_syntax.parser_reduce_number()[(it_symbol-output_syntax.begin_terminal())*set_list.size()+set_index] = 0;
@@ -121,29 +133,30 @@ void ParserGenerator::generate_parser(const Syntax& ebnf_syntax, Syntax& output_
 			int j;
 			if(item.cursor == item.rule->sequence().size()) {
 
-				if(item.rule->unbound_repetition()) { // repetition
-					std::cout << "[" << item.rule->sequence()[0].content().string() << ";" << set_index << "] s* " << find_goto(ebnf_syntax, output_syntax, syntax_representation, set_list[set_index], item.rule->sequence()[0].content(), set_list) << std::endl;
-					j = find_goto(ebnf_syntax, output_syntax, syntax_representation, set_list[set_index], item.rule->sequence()[0].content(), set_list);
-					output_syntax.parser_action_table()[output_syntax.index_of_symbol(item.rule->sequence()[0].content())*set_list.size()+set_index] = Syntax::Parser_action_shift_mask | j;
-				}
-
-
 				if(*item.next_token == output_syntax.get_symbol_from_name(Syntax::EOF_symbol) && item.rule->rule_name() == output_syntax.get_symbol_from_name(Syntax::Root_symbol)) {
 					std::cout << "[" << item.next_token->string() << ";" << set_index << "] accept" << std::endl;
 					output_syntax.parser_action_table()[output_syntax.index_of_symbol(*item.next_token)*set_list.size()+set_index] = Syntax::Parser_action_accept_mask;
 				}
 				else {
-					std::cout << "[" << item.next_token->string() << ";" << set_index << "] r " << item.rule->rule_name().string() << "(" << item.rule->sequence().size() << ")" << (item.rule->has_unbound_repetition() ? "*" : "") << std::endl;
+					std::cout << "[" << item.next_token->string() << ";" << set_index << "] r " << item.rule->rule_name().string() << "(" << item.rule->sequence().size() << ")" << std::endl;
 
-					unsigned int reduce_symbol_index = 0;
 
-					if(item.rule->unbound_repetition()) {
-						reduce_symbol_index = output_syntax.index_of_symbol(*item.rule->parent_rule_name());
+					if(syntax_representation.is_temporary_symbol_value(item.rule->rule_name())) {
+						std::cout << "[" << item.next_token->string() << ";" << set_index << "] r* " << item.rule->parent_rule_name()->string() << "(" << item.rule->sequence().size() << ")" << std::endl;
+						//output_syntax.parser_action_table()[output_syntax.index_of_symbol(*item.next_token)*set_list.size()+set_index] = Syntax::Parser_action_reduce_mask | output_syntax.index_of_symbol(*item.rule->parent_rule_name()); // TODO : more than 1 symbol in repetition
+						j = find_goto(ebnf_syntax, output_syntax, syntax_representation, set_list[set_index], *item.next_token, set_list);
+						std::cout << "transform to s " << j << " \"" << item.next_token->string() << "\"" << std::endl;
+						output_syntax.parser_action_table()[output_syntax.index_of_symbol(*item.next_token)*set_list.size()+set_index] = Syntax::Parser_action_shift_mask | j;
 					}
 					else
-						reduce_symbol_index = output_syntax.index_of_symbol(item.rule->rule_name());
-
-					output_syntax.parser_action_table()[output_syntax.index_of_symbol(*item.next_token)*set_list.size()+set_index] = Syntax::Parser_action_reduce_mask | reduce_symbol_index;
+						output_syntax.parser_action_table()[output_syntax.index_of_symbol(*item.next_token)*set_list.size()+set_index] = Syntax::Parser_action_reduce_mask | output_syntax.index_of_symbol(item.rule->rule_name());
+/*
+					if(item.rule->has_unbound_repetition()) {
+						output_syntax.parser_action_table()[output_syntax.index_of_symbol(*item.next_token)*set_list.size()+set_index] = Syntax::Parser_action_reduce_mask | output_syntax.index_of_symbol(*item.rule->parent_rule_name());
+					}
+					else {
+						output_syntax.parser_action_table()[output_syntax.index_of_symbol(*item.next_token)*set_list.size()+set_index] = Syntax::Parser_action_reduce_mask | output_syntax.index_of_symbol(item.rule->rule_name());
+					}*/
 					output_syntax.parser_reduce_number()[output_syntax.index_of_symbol(*item.next_token)*set_list.size()+set_index] = item.rule->sequence().size();
 				}
 			}
@@ -161,6 +174,17 @@ void ParserGenerator::generate_parser(const Syntax& ebnf_syntax, Syntax& output_
 			}
 			else {
 				output_syntax.parser_goto_table()[(it_symbol-output_syntax.begin_non_terminal())*set_list.size()+set_index] = Syntax::Parser_unaccepting_state;
+			}
+		}
+
+		for(const auto& symbol : syntax_representation.temporary_rule_name) {
+			int j;
+			if((j = find_goto(ebnf_syntax, output_syntax, syntax_representation, set_list[set_index], symbol.first, set_list)) != -1) {
+				std::cout << "[" << syntax_representation.get_rule_by_symbol(symbol.first).parent_rule_name()->string() << ";" << set_index << "] goto* " << j << std::endl;
+				output_syntax.parser_goto_table()[(syntax_representation.get_rule_by_symbol(symbol.first).parent_rule_name()-output_syntax.begin_non_terminal())*set_list.size()+set_index] = j;
+			}
+			else {
+				//output_syntax.parser_goto_table()[(&symbol.first-output_syntax.begin_non_terminal())*set_list.size()+set_index] = Syntax::Parser_unaccepting_state;
 			}
 		}
 	}

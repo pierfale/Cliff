@@ -27,11 +27,12 @@ namespace cliff {
 
 			RuleDefinition(Type type, const TokenSymbol* parent_rule_name, bool unbound_repetition);
 			RuleDefinition(Type type, const TokenSymbol* symbol, const TokenSymbol* parent_rule_name, bool unbound_repetition);
-			RuleDefinition(const RuleDefinition& that) = delete;
+			RuleDefinition(const RuleDefinition& that);
 			RuleDefinition(RuleDefinition&& that);
 
 			RuleDefinition& add_child(Type type);
 			RuleDefinition& add_child(Type type, const TokenSymbol* symbol);
+			RuleDefinition& add_child(const RuleDefinition& that);
 
 			std::vector<RuleDefinition>& list();
 			const std::vector<RuleDefinition>& list() const;
@@ -41,8 +42,6 @@ namespace cliff {
 			Type type() const;
 			const TokenSymbol& content() const;
 			const TokenSymbol* parent_rule_name() const;
-
-			void print(std::ostream& stream) const;
 
 		private:
 			bool _unbound_repetition;
@@ -133,6 +132,7 @@ namespace cliff {
 
 		Rule& get_rule_by_symbol(const TokenSymbol& symbol);
 		const Rule& get_rule_by_symbol(const TokenSymbol& symbol) const;
+		bool is_temporary_symbol_value(const TokenSymbol& symbol) const;
 
 		void print(std::ostream& stream) const;
 
@@ -144,7 +144,9 @@ namespace cliff {
 
 		const TokenSymbol* _entry_rule;
 		std::map<const TokenSymbol*, Rule> _rule_list;
-		std::vector<TokenSymbol> temporary_rule_name;
+
+	public://TODO TMP
+		std::map<TokenSymbol, const TokenSymbol*> temporary_rule_name;
 
 	};
 }

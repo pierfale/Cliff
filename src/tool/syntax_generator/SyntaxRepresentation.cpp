@@ -27,6 +27,10 @@ const SyntaxRepresentation::Rule& SyntaxRepresentation::get_rule_by_symbol(const
 		return it->second;
 }
 
+bool SyntaxRepresentation::is_temporary_symbol_value(const TokenSymbol& symbol) const {
+	return temporary_rule_name.find(symbol) != std::end(temporary_rule_name);
+}
+
 void SyntaxRepresentation::construct(const Syntax& ebnf_syntax, const Syntax& generated_syntax, const AbstractSyntaxTree& current_node, RawRuleList& rule_list) {
 	if(current_node.type() == ebnf_syntax.get_symbol_from_name("rule")) {
 		const TokenSymbol& rule_name = generated_syntax.get_symbol_from_name(current_node.children()[0]->content());
@@ -69,11 +73,17 @@ void SyntaxRepresentation::construct_rule(const Syntax& ebnf_syntax, const Synta
 	}
 	else if(current_node.type() == ebnf_syntax.get_symbol_from_name("rule_repetition")) {
 		std::string rule_name = "rule_temporary_"+std::to_string(temporary_rule_name.size()+1);
-		temporary_rule_name.emplace_back<const char*>(rule_name.c_str());
-		auto rule_it = rule_list.emplace(std::piecewise_construct, std::forward_as_tuple(&temporary_rule_name.back()), std::forward_as_tuple(RuleDefinition::Alternative, &current_rule_name, true)).first;
-		current_rule.add_child(RuleDefinition::NonTerminal, &temporary_rule_name.back());
+		const TokenSymbol& temporary_rule_symbol = temporary_rule_name.emplace(std::piecewise_construct, std::forward_as_tuple(rule_name.c_str()), std::forward_as_tuple(nullptr)).first->first;
+		auto rule_it = rule_list.emplace(std::piecewise_construct, std::forward_as_tuple(&temporary_rule_symbol), std::forward_as_tuple(RuleDefinition::Alternative, &current_rule_name, true)).first;
+		RuleDefinition& element = rule_it->second.add_child(RuleDefinition::Sequence, &temporary_rule_symbol);
 		for(const AbstractSyntaxTree* child : current_node.children())
-			construct_rule(ebnf_syntax, generated_syntax, rule_list, *child, rule_it->second, current_rule_name);
+			construct_rule(ebnf_syntax, generated_syntax, rule_list, *child, element, current_rule_name);
+
+		RuleDefinition& element2 = rule_it->second.add_child(RuleDefinition::NonTerminal, &temporary_rule_symbol);
+		std::copy(std::begin(element.list()), std::end(element.list()), std::back_inserter(element2.list()));
+
+		current_rule.add_child(RuleDefinition::NonTerminal, &temporary_rule_symbol);
+//		temporary_rule_name[temporary_rule_symbol] = &element.list().back().content();
 	}
 	else if(current_node.type() == ebnf_syntax.get_symbol_from_name("rule_non_terminal")) {
 		current_rule.add_child(RuleDefinition::NonTerminal, &generated_syntax.get_symbol_from_name(current_node.content()));
@@ -146,6 +156,10 @@ SyntaxRepresentation::RuleDefinition::RuleDefinition(Type type, const TokenSymbo
 
 }
 
+SyntaxRepresentation::RuleDefinition::RuleDefinition(const RuleDefinition& that) : _unbound_repetition(that._unbound_repetition), _type(that._type), _symbol(that._symbol), _parent_rule_name(that._parent_rule_name), _rule_list(that._rule_list) {
+
+}
+
 SyntaxRepresentation::RuleDefinition::RuleDefinition(RuleDefinition&& that) : _type(that._type), _symbol(that._symbol), _rule_list(std::move(that._rule_list)){
 	that._symbol = nullptr;
 }
@@ -157,6 +171,11 @@ SyntaxRepresentation::RuleDefinition& SyntaxRepresentation::RuleDefinition::add_
 
 SyntaxRepresentation::RuleDefinition& SyntaxRepresentation::RuleDefinition::add_child(Type type, const TokenSymbol* symbol) {
 	_rule_list.emplace_back(type, symbol, nullptr, false);
+	return _rule_list.back();
+}
+
+SyntaxRepresentation::RuleDefinition& SyntaxRepresentation::RuleDefinition::add_child(const RuleDefinition& that) {
+	_rule_list.emplace_back(that);
 	return _rule_list.back();
 }
 
@@ -181,53 +200,6 @@ const TokenSymbol& SyntaxRepresentation::RuleDefinition::content() const {
 
 const TokenSymbol* SyntaxRepresentation::RuleDefinition::parent_rule_name() const {
 	return _parent_rule_name;
-}
-
-void SyntaxRepresentation::RuleDefinition::print(std::ostream& stream) const {
-	switch(_type) {
-	case Terminal:
-		stream << "\"" << _symbol->string() << "\"";
-		break;
-	case NonTerminal:
-		stream << _symbol->string();
-		break;
-	case Sequence:
-		for(const RuleDefinition& child : _rule_list) {
-			child.print(stream);
-			stream << " ";
-		}
-		break;
-	case Alternative:
-		for(const RuleDefinition& child : _rule_list) {
-			child.print(stream);
-			stream << "| ";
-		}
-		break;
-	case OptionalSequence:
-		stream << "[ ";
-		for(const RuleDefinition& child : _rule_list) {
-			child.print(stream);
-			stream << " ";
-		}
-		stream << "] ";
-		break;
-	case RepetitionSequence:
-		stream << "[ ";
-		for(const RuleDefinition& child : _rule_list) {
-			child.print(stream);
-			stream << " ";
-		}
-		stream << "]* ";
-		break;
-	case RepetitionNotEmptySequence:
-		stream << "[ ";
-		for(const RuleDefinition& child : _rule_list) {
-			child.print(stream);
-			stream << " ";
-		}
-		stream << "]+ ";
-		break;
-	}
 }
 
 //
@@ -266,14 +238,14 @@ void SyntaxRepresentation::InlinedAlternative::_first_after(const SyntaxRepresen
 		else
 			syntax_representation.get_rule_by_symbol(_sequence[position].content())._first(syntax_representation, output, history);
 	}
-
+/*
 	if(position > 0) {
 		const Rule& rule = syntax_representation.get_rule_by_symbol(_sequence[position-1].content());
 		if(rule.unbound_repetition()) {
 			rule._first(syntax_representation, output, history);
 		}
 	}
-
+*/
 }
 
 bool SyntaxRepresentation::InlinedAlternative::is_epsilon_productive(const SyntaxRepresentation& syntax_representation, unsigned int position) const {
@@ -287,9 +259,6 @@ bool SyntaxRepresentation::InlinedAlternative::_is_epsilon_productive(const Synt
 			return false;
 		else
 			return syntax_representation.get_rule_by_symbol(_sequence[position].content())._is_epsilon_productive(syntax_representation, history);
-	}
-	else if(position == _sequence.size() && _unbound_repetition) {
-		return true;
 	}
 }
 

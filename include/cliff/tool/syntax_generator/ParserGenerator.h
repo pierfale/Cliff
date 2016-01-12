@@ -42,21 +42,15 @@ namespace cliff {
 						(cursor == that.cursor && next_token < that.next_token));
 			}
 
-			void following_symbols(std::vector<SyntaxRepresentation::Symbol>& output) const {
+			void following_symbols(std::vector<std::pair<SyntaxRepresentation::Symbol, bool>>& output) const {
 				if(cursor < rule->sequence().size())
-					output.push_back(rule->sequence()[cursor]);
-				else if(rule->has_unbound_repetition())
-					output.push_back(rule->sequence()[0]);
+					output.push_back(std::make_pair(rule->sequence()[cursor], false));
 			}
 
 			void consume(const TokenSymbol& symbol,  std::vector<Item>& output) const {
 				if(cursor < rule->sequence().size()) {
 					if(rule->sequence()[cursor].content() == symbol)
 						output.emplace_back(*rule, cursor+1, *next_token);
-				}
-				else if(rule->has_unbound_repetition()) {
-					if(rule->sequence()[0].content() == symbol)
-						output.emplace_back(*rule, 1, *next_token);
 				}
 			}
 
@@ -82,11 +76,11 @@ namespace cliff {
 
 		struct Set {
 
-			Set() : item_list(), transition_symbol(nullptr), predecessor_set(0) {
+			Set() : item_list(), transition_symbol(nullptr), predecessor_set(0), is_repetition(false) {
 
 			}
 
-			Set(const Set& that) : item_list(that.item_list), transition_symbol(that.transition_symbol), predecessor_set(that.predecessor_set) {
+			Set(const Set& that) : item_list(that.item_list), transition_symbol(that.transition_symbol), predecessor_set(that.predecessor_set), is_repetition(that.is_repetition) {
 
 			}
 
@@ -102,6 +96,7 @@ namespace cliff {
 			std::vector<Item> item_list;
 			const TokenSymbol* transition_symbol;
 			unsigned int predecessor_set;
+			bool is_repetition;
 
 		};
 
