@@ -28,7 +28,11 @@ const SyntaxRepresentation::Rule& SyntaxRepresentation::get_rule_by_symbol(const
 }
 
 bool SyntaxRepresentation::is_temporary_symbol_value(const TokenSymbol& symbol) const {
-	return temporary_rule_name.find(symbol) != std::end(temporary_rule_name);
+	return std::find(std::begin(_temporary_rule_name), std::end(_temporary_rule_name), symbol) != std::end(_temporary_rule_name);
+}
+
+const std::vector<TokenSymbol>& SyntaxRepresentation::temporary_rule_name() const {
+	return _temporary_rule_name;
 }
 
 void SyntaxRepresentation::construct(const Syntax& ebnf_syntax, const Syntax& generated_syntax, const AbstractSyntaxTree& current_node, RawRuleList& rule_list) {
@@ -72,8 +76,9 @@ void SyntaxRepresentation::construct_rule(const Syntax& ebnf_syntax, const Synta
 			construct_rule(ebnf_syntax, generated_syntax, rule_list, *child, new_child, current_rule_name);
 	}
 	else if(current_node.type() == ebnf_syntax.get_symbol_from_name("rule_repetition")) {
-		std::string rule_name = "rule_temporary_"+std::to_string(temporary_rule_name.size()+1);
-		const TokenSymbol& temporary_rule_symbol = temporary_rule_name.emplace(std::piecewise_construct, std::forward_as_tuple(rule_name.c_str()), std::forward_as_tuple(nullptr)).first->first;
+		std::string rule_name = "rule_temporary_"+std::to_string(_temporary_rule_name.size()+1);
+		_temporary_rule_name.emplace_back(rule_name.c_str());
+		const TokenSymbol& temporary_rule_symbol = _temporary_rule_name.back();
 		auto rule_it = rule_list.emplace(std::piecewise_construct, std::forward_as_tuple(&temporary_rule_symbol), std::forward_as_tuple(RuleDefinition::Alternative, &current_rule_name, true)).first;
 		RuleDefinition& element = rule_it->second.add_child(RuleDefinition::Sequence);
 		for(const AbstractSyntaxTree* child : current_node.children())

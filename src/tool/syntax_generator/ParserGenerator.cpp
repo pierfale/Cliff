@@ -116,7 +116,7 @@ void ParserGenerator::goto_procedure(const Syntax& ebnf_syntax, const Syntax& ge
 }
 
 void ParserGenerator::generate_parser(const Syntax& ebnf_syntax, Syntax& output_syntax, const SyntaxRepresentation& syntax_representation, const std::vector<Set>& set_list) {
-	output_syntax.set_parser_table(set_list.size());
+	output_syntax.set_parser_table(set_list.size(), syntax_representation.temporary_rule_name().size());
 
 
 	for(unsigned int set_index = 0; set_index < set_list.size(); set_index++) {
@@ -124,11 +124,6 @@ void ParserGenerator::generate_parser(const Syntax& ebnf_syntax, Syntax& output_
 			output_syntax.parser_action_table()[(it_symbol-output_syntax.begin_terminal())*set_list.size()+set_index] = Syntax::Parser_unaccepting_state;
 			output_syntax.parser_reduce_number()[(it_symbol-output_syntax.begin_terminal())*set_list.size()+set_index] = 0;
 		}
-
-		for(auto it_symbol = output_syntax.begin_non_terminal(); it_symbol != output_syntax.end_non_terminal(); ++it_symbol) {
-			output_syntax.parser_goto_table()[(it_symbol-output_syntax.begin_non_terminal())*set_list.size()+set_index] = Syntax::Parser_unaccepting_state;
-		}
-
 		for(const Item& item : set_list[set_index].item_list) {
 			int j;
 			if(item.cursor == item.rule->sequence().size()) {
@@ -143,7 +138,10 @@ void ParserGenerator::generate_parser(const Syntax& ebnf_syntax, Syntax& output_
 
 					if(syntax_representation.is_temporary_symbol_value(item.rule->rule_name())) {
 						std::cout << "[" << item.next_token->string() << ";" << set_index << "] r* " << item.rule->parent_rule_name()->string() << "(" << item.rule->sequence().size() << ")" << std::endl;
-						output_syntax.parser_action_table()[output_syntax.index_of_symbol(*item.next_token)*set_list.size()+set_index] = Syntax::Parser_action_reduce_mask | output_syntax.index_of_symbol(*item.rule->parent_rule_name()); // TODO : more than 1 symbol in repetition
+
+
+						output_syntax.parser_action_table()[output_syntax.index_of_symbol(*item.next_token)*set_list.size()+set_index] = Syntax::Parser_action_reduce_mask | Syntax::Parser_action_unbound_state_mask
+								| (std::distance(output_syntax.begin_non_terminal(),  output_syntax.end_non_terminal())+std::distance(std::begin(syntax_representation.temporary_rule_name()), std::find(std::begin(syntax_representation.temporary_rule_name()), std::end(syntax_representation.temporary_rule_name()), item.rule->rule_name())));
 						/*j = find_goto(ebnf_syntax, output_syntax, syntax_representation, set_list[set_index], *item.next_token, set_list);
 						std::cout << "transform to s " << j << " \"" << item.next_token->string() << "\"" << std::endl;
 						output_syntax.parser_action_table()[output_syntax.index_of_symbol(*item.next_token)*set_list.size()+set_index] = Syntax::Parser_action_shift_mask | j;*/
@@ -170,21 +168,21 @@ void ParserGenerator::generate_parser(const Syntax& ebnf_syntax, Syntax& output_
 			int j;
 			if((j = find_goto(ebnf_syntax, output_syntax, syntax_representation, set_list[set_index], *it_symbol, set_list)) != -1) {
 				std::cout << "[" << it_symbol->string() << ";" << set_index << "] goto " << j << std::endl;
-				output_syntax.parser_goto_table()[(it_symbol-output_syntax.begin_non_terminal())*set_list.size()+set_index] = j;
+				output_syntax.parser_goto_table()[std::distance(output_syntax.begin_non_terminal(), it_symbol)*set_list.size()+set_index] = j;
 			}
 			else {
-				output_syntax.parser_goto_table()[(it_symbol-output_syntax.begin_non_terminal())*set_list.size()+set_index] = Syntax::Parser_unaccepting_state;
+				output_syntax.parser_goto_table()[std::distance(output_syntax.begin_non_terminal(), it_symbol)*set_list.size()+set_index] = Syntax::Parser_unaccepting_state;
 			}
 		}
 
-		for(const auto& symbol : syntax_representation.temporary_rule_name) {
+		for(auto it_symbol = std::begin(syntax_representation.temporary_rule_name()); it_symbol != std::end(syntax_representation.temporary_rule_name()); ++it_symbol) {
 			int j;
-			if((j = find_goto(ebnf_syntax, output_syntax, syntax_representation, set_list[set_index], symbol.first, set_list)) != -1) {
-				std::cout << "[" << symbol.first.string() << ";" << set_index << "] goto* " << j << std::endl;
-				output_syntax.parser_goto_table()[(syntax_representation.get_rule_by_symbol(symbol.first).parent_rule_name()-output_syntax.begin_non_terminal())*set_list.size()+set_index] = j;
+			if((j = find_goto(ebnf_syntax, output_syntax, syntax_representation, set_list[set_index], *it_symbol, set_list)) != -1) {
+				std::cout << "[" << it_symbol->string() << ";" << set_index << "] goto " << j << "(" << (std::distance(output_syntax.begin_non_terminal(),  output_syntax.end_non_terminal())+std::distance(std::begin(syntax_representation.temporary_rule_name()), it_symbol)) << ")" << std::endl;
+				output_syntax.parser_goto_table()[(std::distance(output_syntax.begin_non_terminal(),  output_syntax.end_non_terminal())+std::distance(std::begin(syntax_representation.temporary_rule_name()), it_symbol))*set_list.size()+set_index] = j;
 			}
 			else {
-				//output_syntax.parser_goto_table()[(&symbol.first-output_syntax.begin_non_terminal())*set_list.size()+set_index] = Syntax::Parser_unaccepting_state;
+output_syntax.parser_goto_table()[(std::distance(output_syntax.begin_non_terminal(),  output_syntax.end_non_terminal())+std::distance(std::begin(syntax_representation.temporary_rule_name()), it_symbol))*set_list.size()+set_index] = Syntax::Parser_unaccepting_state;
 			}
 		}
 	}

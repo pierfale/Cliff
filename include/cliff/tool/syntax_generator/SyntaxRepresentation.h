@@ -132,7 +132,9 @@ namespace cliff {
 
 		Rule& get_rule_by_symbol(const TokenSymbol& symbol);
 		const Rule& get_rule_by_symbol(const TokenSymbol& symbol) const;
+
 		bool is_temporary_symbol_value(const TokenSymbol& symbol) const;
+		const std::vector<TokenSymbol>& temporary_rule_name() const;
 
 		void print(std::ostream& stream) const;
 
@@ -144,9 +146,7 @@ namespace cliff {
 
 		const TokenSymbol* _entry_rule;
 		std::map<const TokenSymbol*, Rule> _rule_list;
-
-	public://TODO TMP
-		std::map<TokenSymbol, const TokenSymbol*> temporary_rule_name;
+		std::vector<TokenSymbol> _temporary_rule_name;
 
 	};
 }

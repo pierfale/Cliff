@@ -9,7 +9,7 @@ const Syntax::State Syntax::Parser_init_state = 0x0;
 
 Syntax::Syntax() : _symbol_number(0), _symbol_non_terminal_start(0), _symbol_table(nullptr),
 	_lexer_state_number(0), _lexer_table(nullptr), _lexer_accepting_state(nullptr),
-	_parser_state_number(0), _action_table(nullptr), _goto_table(nullptr) {
+	_parser_state_number(0), _parser_dummy_rule_number(0), _action_table(nullptr), _goto_table(nullptr) {
 
 }
 
@@ -70,11 +70,14 @@ void Syntax::load(const char* filename) {
 	uint32_t parser_state_number;
 	file.read((char*)&parser_state_number, sizeof(uint32_t));
 
-	set_parser_table(parser_state_number);
+	uint32_t dummy_state_number;
+	file.read((char*)&dummy_state_number, sizeof(uint32_t));
+
+	set_parser_table(parser_state_number, dummy_state_number);
 
 	file.read((char*)_action_table, _parser_state_number*_symbol_non_terminal_start*sizeof(Index));
 	file.read((char*)_reduce_number, _parser_state_number*_symbol_non_terminal_start*sizeof(Index));
-	file.read((char*)_goto_table, _parser_state_number*(_symbol_number-_symbol_non_terminal_start)*sizeof(Index));
+	file.read((char*)_goto_table, _parser_state_number*(_symbol_number-_symbol_non_terminal_start+_parser_dummy_rule_number)*sizeof(Index));
 
 	file.close();
 }
@@ -106,9 +109,12 @@ void Syntax::save(const char* filename) {
 	uint32_t parser_state_number = _parser_state_number;
 	file.write((char*)&parser_state_number, sizeof(uint32_t));
 
+	uint32_t dummy_state_number = _parser_dummy_rule_number;
+	file.write((char*)&dummy_state_number, sizeof(uint32_t));
+
 	file.write((char*)_action_table, _parser_state_number*_symbol_non_terminal_start*sizeof(Index));
 	file.write((char*)_reduce_number, _parser_state_number*_symbol_non_terminal_start*sizeof(Index));
-	file.write((char*)_goto_table, _parser_state_number*(_symbol_number-_symbol_non_terminal_start)*sizeof(Index));
+	file.write((char*)_goto_table, _parser_state_number*(_symbol_number-_symbol_non_terminal_start+_parser_dummy_rule_number)*sizeof(Index));
 
 	file.close();
 }
@@ -220,6 +226,10 @@ Syntax::State Syntax::next_parser_goto(State current_state, const TokenSymbol& c
 	return _goto_table[(index_of_symbol(current_symbol)-_symbol_non_terminal_start)*_parser_state_number+current_state];
 }
 
+Syntax::State Syntax::next_parser_dummy_goto(State current_state, const TokenSymbol& current_symbol, State new_state) const {
+	return _goto_table[(_action_table[index_of_symbol(current_symbol)*_parser_state_number+current_state] & Parser_action_content_mask)*_parser_state_number+new_state];
+}
+
 const TokenSymbol& Syntax::parser_reduce_symbol(State current_state, const TokenSymbol& current_symbol) const {
 	return _symbol_table[_action_table[index_of_symbol(current_symbol)*_parser_state_number+current_state] & Parser_action_content_mask];
 }
@@ -228,11 +238,12 @@ unsigned int Syntax::parser_reduce_number(State current_state, const TokenSymbol
 	return _reduce_number[index_of_symbol(current_symbol)*_parser_state_number+current_state];
 }
 
-void Syntax::set_parser_table(unsigned int state_number) {
+void Syntax::set_parser_table(unsigned int state_number, unsigned int dummy_rule_number) {
 	_action_table = new Index[state_number*_symbol_non_terminal_start];
 	_reduce_number = new Index[state_number*_symbol_non_terminal_start];
-	_goto_table = new Index[state_number*(_symbol_number-_symbol_non_terminal_start)];
+	_goto_table = new Index[state_number*(_symbol_number-_symbol_non_terminal_start+dummy_rule_number)];
 	_parser_state_number = state_number;
+	_parser_dummy_rule_number = dummy_rule_number;
 }
 
 Syntax::Index* Syntax::parser_action_table() {

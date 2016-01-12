@@ -30,7 +30,6 @@ namespace cliff {
 		static const Index Parser_action_shift_mask = 0x80000000;
 		static const Index Parser_action_reduce_mask = 0x40000000;
 		static const Index Parser_action_accept_mask = 0x20000000;
-		static const Index Parser_action_start_unbound_state_mask = 0x08000000;
 		static const Index Parser_action_unbound_state_mask = 0x10000000;
 		static const Index Parser_action_content_mask = 0xFFFFFF;
 
@@ -71,10 +70,11 @@ namespace cliff {
 		//
 		Index next_parser_action(State current_state, const TokenSymbol& current_symbol) const;
 		State next_parser_goto(State current_state, const TokenSymbol& current_symbol) const;
+		State next_parser_dummy_goto(State current_state, const TokenSymbol& current_symbol, State new_state) const;
 		const TokenSymbol& parser_reduce_symbol(State current_state, const TokenSymbol& current_symbol) const;
 		unsigned int parser_reduce_number(State current_state, const TokenSymbol& current_symbol) const;
 
-		void set_parser_table(unsigned int state_number);
+		void set_parser_table(unsigned int state_number, unsigned int dummy_rule_number);
 		Index* parser_action_table();
 		const Index* parser_action_table() const;
 		Index* parser_goto_table();
@@ -109,6 +109,7 @@ namespace cliff {
 		//	Parser
 		//
 		unsigned int _parser_state_number;
+		unsigned int _parser_dummy_rule_number;
 		Index* _action_table;
 		Index* _reduce_number;
 
