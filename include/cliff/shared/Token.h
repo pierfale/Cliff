@@ -30,16 +30,19 @@ namespace cliff {
 	class Token {
 
 	public:
+		Token();
 		Token(const TokenSymbol& type);
-		Token(const TokenSymbol& type, const char* owner_content);
+		Token(const TokenSymbol& type, const char* content);
 		Token(const Token& that);
 		~Token();
+
+		void set(const TokenSymbol& type, const char* content = nullptr);
 
 		const TokenSymbol& type() const;
 		const char* content() const;
 
 	private:
-		const TokenSymbol& _type;
+		const TokenSymbol* _type;
 		char* _content;
 
 	};

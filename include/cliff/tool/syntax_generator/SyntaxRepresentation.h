@@ -125,12 +125,13 @@ namespace cliff {
 		Rule& get_rule_by_symbol(const TokenSymbol& symbol);
 		const Rule& get_rule_by_symbol(const TokenSymbol& symbol) const;
 
-		bool is_temporary_symbol_value(const TokenSymbol& symbol) const;
-		const std::vector<TokenSymbol>& temporary_rule_name() const;
+		bool is_dummy_symbol_value(const TokenSymbol& symbol) const;
+		const std::vector<TokenSymbol>& dummy_rule_name() const;
 
 		void print(std::ostream& stream) const;
 
 	private:
+		void construct_dummy_symbol(const Syntax& ebnf_syntax, const Syntax& generated_syntax, const AbstractSyntaxTree& current_node);
 		void construct(const Syntax& ebnf_syntax, const Syntax& generated_syntax, const AbstractSyntaxTree& current_node, RawRuleList& rule_list);
 		void construct_rule(const Syntax& ebnf_syntax, const Syntax& generated_syntax, RawRuleList& rule_list, const AbstractSyntaxTree& current_node, RuleDefinition& current_rule, const TokenSymbol& current_rule_name);
 		void inline_rule(const Syntax& ebnf_syntax, const Syntax& generated_syntax, const RawRuleList& rule_list);
@@ -138,7 +139,8 @@ namespace cliff {
 
 		const TokenSymbol* _entry_rule;
 		std::map<const TokenSymbol*, Rule> _rule_list;
-		std::vector<TokenSymbol> _temporary_rule_name;
+		std::vector<TokenSymbol> _dummy_rule_name;
+		unsigned int _dummy_rule_cursor;
 
 	};
 }

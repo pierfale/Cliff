@@ -13,6 +13,7 @@ namespace cliff {
 class AbstractSyntaxTree {
 
 public:
+	AbstractSyntaxTree(MemoryContainer<AbstractSyntaxTree>& memory_container);
 	AbstractSyntaxTree(MemoryContainer<AbstractSyntaxTree>& memory_container, const TokenSymbol& symbol);
 	AbstractSyntaxTree(MemoryContainer<AbstractSyntaxTree>& memory_container, const Token& token);
 	~AbstractSyntaxTree();
@@ -20,6 +21,8 @@ public:
 	AbstractSyntaxTree& add_child(const TokenSymbol& symbol);
 	AbstractSyntaxTree& add_child(const Token& token);
 	AbstractSyntaxTree& add_child(AbstractSyntaxTree* child);
+
+	void set(const TokenSymbol& type, const char* content = nullptr);
 
 	bool is_leaf() const;
 	const TokenSymbol& type() const;

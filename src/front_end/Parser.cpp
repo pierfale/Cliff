@@ -13,9 +13,6 @@ AbstractSyntaxTree& Parser::execute(const std::vector<Token>& input, MemoryConta
 	std::stack<AbstractSyntaxTree*> tree_stack;
 	state_stack.push(Syntax::Parser_init_state);
 
-	TokenSymbol* tmp = new TokenSymbol("tmp");
-
-
 	while(true) {
 		if(state_stack.empty()) {
 			//error
@@ -25,156 +22,67 @@ AbstractSyntaxTree& Parser::execute(const std::vector<Token>& input, MemoryConta
 
 		Syntax::State current_state = state_stack.top();
 
-		std::cout << input[token_cursor].type().string() << "-" << current_state << std::endl;
-
 		Syntax::Index next_action = _syntax.next_parser_action(current_state, input[token_cursor].type());
 		if(next_action == Syntax::Parser_unaccepting_state)
 			THROW(exception::Exception, "Parser : Unrecognized input");
 
 		if(next_action & Syntax::Parser_action_reduce_mask) {
+			unsigned int n_child = _syntax.parser_reduce_number(current_state, input[token_cursor].type())
+					-(next_action & (Syntax::Parser_action_skip_state_mask | Syntax::Parser_action_replace_state_mask) ? 1 : 0) ;
 
-			unsigned int n_child = _syntax.parser_reduce_number(current_state, input[token_cursor].type());
+			std::vector<AbstractSyntaxTree*> children;
+			children.reserve(n_child);
+			for(unsigned int i=0; i<n_child; i++) {
+				children.push_back(tree_stack.top());
+				tree_stack.pop();
 
+				if(state_stack.top() == Syntax::Parser_unaccepting_state)
+					n_child++;
 
-			if(next_action & Syntax::Parser_action_dummy_state_mask) {
-				const TokenSymbol& left_member = *tmp;
-				AbstractSyntaxTree& current_tree = tree_memory.emplace(tree_memory, left_member);
-				std::cout << "reduce " << left_member.string() << " of " << n_child << std::endl;
-				std::vector<AbstractSyntaxTree*> children;
-				children.reserve(n_child);
-				for(unsigned int i=0; i<n_child; i++) {
-					children.push_back(tree_stack.top());
-					tree_stack.pop();
-					state_stack.pop();
-				}
-
-				for(int i=n_child-1; i>=0; i--)
-					current_tree.add_child(children[i]);
-
-				tree_stack.push(&current_tree);
-				state_stack.push(_syntax.next_parser_dummy_goto(current_state, input[token_cursor].type(), state_stack.top()));
+				state_stack.pop();
 			}
-			else if(next_action & Syntax::Parser_action_skip_state_mask) {
-				std::vector<AbstractSyntaxTree*> children;
-				children.reserve(n_child-1);
-				for(unsigned int i=0; i<n_child-1; i++) {
-					children.push_back(tree_stack.top());
-					tree_stack.pop();
-					state_stack.pop();
-				}
-				AbstractSyntaxTree* current_tree = tree_stack.top();
+
+			AbstractSyntaxTree* current_tree = nullptr;
+
+			TokenSymbol* tmp = new TokenSymbol("tmp...");
+			if(next_action & Syntax::Parser_action_dummy_state_mask)
+				current_tree = &tree_memory.emplace(tree_memory, *tmp);
+			else if(next_action & (Syntax::Parser_action_skip_state_mask | Syntax::Parser_action_replace_state_mask)) {
+				current_tree = tree_stack.top();
 				tree_stack.pop();
 				state_stack.pop();
+			}
+			else
+				current_tree = &tree_memory.emplace(tree_memory, _syntax.parser_reduce_symbol(current_state, input[token_cursor].type()));
 
-				for(int i=n_child-2; i>=0; i--)
-					current_tree->add_child(children[i]);
+			if(next_action & Syntax::Parser_action_replace_state_mask) {
+				current_tree->set(_syntax.parser_reduce_symbol(current_state, input[token_cursor].type()));
+			}
 
-				tree_stack.push(current_tree);
+
+			for(int i=n_child-1; i>=0; i--)
+				current_tree->add_child(children[i]);
+
+			tree_stack.push(current_tree);
+
+			if(next_action & (Syntax::Parser_action_dummy_state_mask | Syntax::Parser_action_skip_state_mask))
 				state_stack.push(_syntax.next_parser_dummy_goto(current_state, input[token_cursor].type(), state_stack.top()));
-			}
-			else if(next_action & Syntax::Parser_action_replace_state_mask) {
-
-				const TokenSymbol& left_member = _syntax.parser_reduce_symbol(current_state, input[token_cursor].type());
-				std::vector<AbstractSyntaxTree*> children;
-				children.reserve(n_child-1);
-				for(unsigned int i=0; i<n_child-1; i++) {
-					children.push_back(tree_stack.top());
-					tree_stack.pop();
-					state_stack.pop();
-				}
-				AbstractSyntaxTree* current_tree = tree_stack.top();
-				current_tree->set(left_member);
-				tree_stack.pop();
-				state_stack.pop();
-
-				for(int i=n_child-2; i>=0; i--)
-					current_tree->add_child(children[i]);
-
-				tree_stack.push(current_tree);
-				state_stack.push(_syntax.next_parser_goto(state_stack.top(), left_member));
-			}
-			else {
-				const TokenSymbol& left_member = _syntax.parser_reduce_symbol(current_state, input[token_cursor].type());
-				AbstractSyntaxTree& current_tree = tree_memory.emplace(tree_memory, left_member);
-				std::cout << "reduce " << left_member.string() << " of " << n_child << std::endl;
-				std::vector<AbstractSyntaxTree*> children;
-				children.reserve(n_child);
-				for(unsigned int i=0; i<n_child; i++) {
-					children.push_back(tree_stack.top());
-					tree_stack.pop();
-					state_stack.pop();
-				}
-
-				for(int i=n_child-1; i>=0; i--)
-					current_tree.add_child(children[i]);
-
-				tree_stack.push(&current_tree);
-				std::cout << "goto " << state_stack.top() << ", " << left_member.string() << std::endl;
-				state_stack.push(_syntax.next_parser_goto(state_stack.top(), left_member));
-			}
-/*
-			if(false) {
-
-				//TODO add end case : Flag on 'List El @' reduce -> change tree temporary to left member
-				if(n_child == 1) {
-					const TokenSymbol& left_member = *tmp;
-					AbstractSyntaxTree& current_tree = tree_memory.emplace(tree_memory, left_member);
-					std::cout << "reduce " << left_member.string() << " of " << n_child << std::endl;
-					std::vector<AbstractSyntaxTree*> children;
-					children.reserve(n_child);
-					for(unsigned int i=0; i<n_child; i++) {
-						children.push_back(tree_stack.top());
-						tree_stack.pop();
-						state_stack.pop();
-					}
-
-					for(int i=n_child-1; i>=0; i--)
-						current_tree.add_child(children[i]);
-
-					tree_stack.push(&current_tree);
-				}
-				else {
-					std::vector<AbstractSyntaxTree*> children;
-					children.reserve(n_child-1);
-					for(unsigned int i=0; i<n_child-1; i++) {
-						children.push_back(tree_stack.top());
-						tree_stack.pop();
-						state_stack.pop();
-					}
-					AbstractSyntaxTree* current_tree = tree_stack.top();
-					tree_stack.pop();
-					state_stack.pop();
-
-					for(int i=n_child-2; i>=0; i--)
-						current_tree->add_child(children[i]);
-
-					tree_stack.push(current_tree);
-				}
-				state_stack.push(_syntax.next_parser_dummy_goto(current_state, input[token_cursor].type(), state_stack.top()));
-			}
-			else {
-				const TokenSymbol& left_member = _syntax.parser_reduce_symbol(current_state, input[token_cursor].type());
-				AbstractSyntaxTree& current_tree = tree_memory.emplace(tree_memory, left_member);
-				std::cout << "reduce " << left_member.string() << " of " << n_child << std::endl;
-				std::vector<AbstractSyntaxTree*> children;
-				children.reserve(n_child);
-				for(unsigned int i=0; i<n_child; i++) {
-					children.push_back(tree_stack.top());
-					tree_stack.pop();
-					state_stack.pop();
-				}
-
-				for(int i=n_child-1; i>=0; i--)
-					current_tree.add_child(children[i]);
-
-				tree_stack.push(&current_tree);
-				std::cout << "goto " << state_stack.top() << ", " << left_member.string() << std::endl;
-				state_stack.push(_syntax.next_parser_goto(state_stack.top(), left_member));
-			}
-*/
+			else
+				state_stack.push(_syntax.next_parser_goto(state_stack.top(), _syntax.parser_reduce_symbol(current_state, input[token_cursor].type())));
 		}
 		else if(next_action & Syntax::Parser_action_shift_mask) {
-			std::cout << "shift " << input[token_cursor].type().string() << " to " << (next_action & Syntax::Parser_action_content_mask) << std::endl;
+			if(next_action & Syntax::Parser_action_replace_state_mask) {
+				std::cout << "shit/replace" << std::endl;
+				AbstractSyntaxTree* current_tree = tree_stack.top();
+				tree_stack.pop();
+				state_stack.pop();
+
+				for(AbstractSyntaxTree* child : current_tree->children()) {
+					tree_stack.push(child);
+					state_stack.push(child == current_tree->children().front() ? 0 : Syntax::Parser_unaccepting_state);
+				}
+			}
+
 			AbstractSyntaxTree& current_tree = tree_memory.emplace(tree_memory, input[token_cursor]);
 			tree_stack.push(&current_tree);
 			token_cursor++;

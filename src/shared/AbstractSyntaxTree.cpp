@@ -2,6 +2,10 @@
 
 using namespace cliff;
 
+AbstractSyntaxTree::AbstractSyntaxTree(MemoryContainer<AbstractSyntaxTree>& memory_container) : _memory_container(memory_container), _token() {
+
+}
+
 AbstractSyntaxTree::AbstractSyntaxTree(MemoryContainer<AbstractSyntaxTree>& memory_container, const TokenSymbol& symbol) : _memory_container(memory_container), _token(symbol) {
 
 }
@@ -29,6 +33,10 @@ AbstractSyntaxTree& AbstractSyntaxTree::add_child(const Token& token) {
 AbstractSyntaxTree& AbstractSyntaxTree::add_child(AbstractSyntaxTree* child) {
 	_children.push_back(child);
 	return *child;
+}
+
+void AbstractSyntaxTree::set(const TokenSymbol& type, const char* content) {
+	_token.set(type, content);
 }
 
 bool AbstractSyntaxTree::is_leaf() const {

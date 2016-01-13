@@ -6,6 +6,7 @@ const char* Syntax::EOF_symbol = "_eof_";
 const char* Syntax::Root_symbol = "_root_";
 
 const Syntax::State Syntax::Parser_init_state = 0x0;
+const Syntax::Index Syntax::Parser_unaccepting_state = 0xFFFFFFFF;
 
 Syntax::Syntax() : _symbol_number(0), _symbol_non_terminal_start(0), _symbol_table(nullptr),
 	_lexer_state_number(0), _lexer_table(nullptr), _lexer_accepting_state(nullptr),

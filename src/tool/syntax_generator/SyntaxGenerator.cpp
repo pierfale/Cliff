@@ -171,29 +171,20 @@ void SyntaxGenerator::execute(ProgramOption::Iterator option_caller) {
 	//
 	// Regular Expression
 	//
-/*
+
 	AbstractSyntaxTree rule_list_node(tree_memory,token_symbol_rule_list);
 
-	// regular_expression := "#" regular_expression_block_list "#"
+	// regular_expression := "#" regular_expression_block* "#"
 	AbstractSyntaxTree& rule_1_node = rule_list_node.add_child(token_symbol_rule);
 	rule_1_node.add_child(Token(token_symbol_rule_name, "regular_expression"));
 	rule_1_node.add_child(token_symbol_unamed_terminal);
 	AbstractSyntaxTree& token_symbol_rule_1_definition_alternative = rule_1_node.add_child(token_symbol_rule_definition_alternative);
 	AbstractSyntaxTree& token_symbol_rule_1_1 = token_symbol_rule_1_definition_alternative.add_child(token_symbol_rule_definition);
 	token_symbol_rule_1_1.add_child(Token(token_symbol_rule_terminal, "#"));
-	token_symbol_rule_1_1.add_child(Token(token_symbol_rule_non_terminal, "regular_expression_block_list"));
+	AbstractSyntaxTree& token_symbol_rule_1_1_1 = token_symbol_rule_1_1.add_child(Token(token_symbol_rule_repetition));
+	token_symbol_rule_1_1_1.add_child(Token(token_symbol_rule_non_terminal, "regular_expression_block"));
 	token_symbol_rule_1_1.add_child(Token(token_symbol_rule_terminal, "#"));
 
-	// regular_expression_block_list := regular_expression_block | regular_expression_block regular_expression_block_list
-	AbstractSyntaxTree& rule_2_node = rule_list_node.add_child(token_symbol_rule);
-	rule_2_node.add_child(Token(token_symbol_rule_name, "regular_expression_block_list"));
-	rule_2_node.add_child(token_symbol_unamed_terminal);
-	AbstractSyntaxTree& token_symbol_rule_2_definition_alternative = rule_2_node.add_child(token_symbol_rule_definition_alternative);
-	AbstractSyntaxTree& token_symbol_rule_2_1 = token_symbol_rule_2_definition_alternative.add_child(token_symbol_rule_definition);
-	token_symbol_rule_2_1.add_child(Token(token_symbol_rule_non_terminal, "regular_expression_block"));
-	AbstractSyntaxTree& token_symbol_rule_2_2 = token_symbol_rule_2_definition_alternative.add_child(token_symbol_rule_definition);
-	token_symbol_rule_2_2.add_child(Token(token_symbol_rule_non_terminal, "regular_expression_block"));
-	token_symbol_rule_2_2.add_child(Token(token_symbol_rule_non_terminal, "regular_expression_block_list"));
 
 	// regular_expression_block := regular_expression_letter [regular_expression_quantifier] | regular_expression_range [regular_expression_quantifier]
 	AbstractSyntaxTree& rule_3_node = rule_list_node.add_child(token_symbol_rule);
@@ -227,26 +218,16 @@ void SyntaxGenerator::execute(ProgramOption::Iterator option_caller) {
 	AbstractSyntaxTree& token_symbol_rule_4_6 = token_symbol_rule_4_definition_alternative.add_child(token_symbol_rule_definition);
 	token_symbol_rule_4_6.add_child(Token(token_symbol_rule_terminal, "."));
 
-	// regular_expression_range := "[" regular_expression_range_block_list "]"
+	// regular_expression_range := "[" regular_expression_range_block* "]"
 	AbstractSyntaxTree& rule_5_node = rule_list_node.add_child(token_symbol_rule);
 	rule_5_node.add_child(Token(token_symbol_rule_name, "regular_expression_range"));
 	rule_5_node.add_child(token_symbol_unamed_terminal);
 	AbstractSyntaxTree& token_symbol_rule_5_definition_alternative = rule_5_node.add_child(token_symbol_rule_definition_alternative);
 	AbstractSyntaxTree& token_symbol_rule_5_1 = token_symbol_rule_5_definition_alternative.add_child(token_symbol_rule_definition);
 	token_symbol_rule_5_1.add_child(Token(token_symbol_rule_terminal, "["));
-	token_symbol_rule_5_1.add_child(Token(token_symbol_rule_non_terminal, "regular_expression_range_block_list"));
+	AbstractSyntaxTree& token_symbol_rule_5_1_1 = token_symbol_rule_5_1.add_child(Token(token_symbol_rule_repetition));
+	token_symbol_rule_5_1_1.add_child(Token(token_symbol_rule_non_terminal, "regular_expression_range_block"));
 	token_symbol_rule_5_1.add_child(Token(token_symbol_rule_terminal, "]"));
-
-	// regular_expression_range_block_list := regular_expression_range_block | regular_expression_range_block regular_expression_range_block_list
-	AbstractSyntaxTree& rule_6_node = rule_list_node.add_child(token_symbol_rule);
-	rule_6_node.add_child(Token(token_symbol_rule_name, "regular_expression_range_block_list"));
-	rule_6_node.add_child(token_symbol_unamed_terminal);
-	AbstractSyntaxTree& token_symbol_rule_6_definition_alternative = rule_6_node.add_child(token_symbol_rule_definition_alternative);
-	AbstractSyntaxTree& token_symbol_rule_6_1 = token_symbol_rule_6_definition_alternative.add_child(token_symbol_rule_definition);
-	token_symbol_rule_6_1.add_child(Token(token_symbol_rule_non_terminal, "regular_expression_range_block"));
-	AbstractSyntaxTree& token_symbol_rule_6_2 = token_symbol_rule_6_definition_alternative.add_child(token_symbol_rule_definition);
-	token_symbol_rule_6_2.add_child(Token(token_symbol_rule_non_terminal, "regular_expression_range_block"));
-	token_symbol_rule_6_2.add_child(Token(token_symbol_rule_non_terminal, "regular_expression_range_block_list"));
 
 	// regular_expression_range_block := regular_expression_letter | regular_expression_letter "-" regular_expression_letter
 	AbstractSyntaxTree& rule_7_node = rule_list_node.add_child(token_symbol_rule);
@@ -271,11 +252,11 @@ void SyntaxGenerator::execute(ProgramOption::Iterator option_caller) {
 	token_symbol_rule_8_2.add_child(Token(token_symbol_rule_terminal, "*"));
 	AbstractSyntaxTree& token_symbol_rule_8_3 = token_symbol_rule_8_definition_alternative.add_child(token_symbol_rule_definition);
 	token_symbol_rule_8_3.add_child(Token(token_symbol_rule_terminal, "?"));
-*/
+
 	//
 	//	Parenthesis
 	//
-
+/*
 	AbstractSyntaxTree rule_list_node(tree_memory,token_symbol_rule_list);
 
 	AbstractSyntaxTree& rule_2_node = rule_list_node.add_child(token_symbol_rule);
@@ -283,28 +264,22 @@ void SyntaxGenerator::execute(ProgramOption::Iterator option_caller) {
 	rule_2_node.add_child(token_symbol_unamed_terminal);
 	AbstractSyntaxTree& token_symbol_rule_2_definition_alternative = rule_2_node.add_child(token_symbol_rule_definition_alternative);
 	AbstractSyntaxTree& token_symbol_rule_2_1 = token_symbol_rule_2_definition_alternative.add_child(token_symbol_rule_definition);
-/*
-	token_symbol_rule_2_1.add_child(Token(token_symbol_rule_non_terminal, "list"));
-	token_symbol_rule_2_1.add_child(Token(token_symbol_rule_non_terminal, "pair"));
-	AbstractSyntaxTree& token_symbol_rule_2_2 = token_symbol_rule_2_definition_alternative.add_child(token_symbol_rule_definition);
-	token_symbol_rule_2_2.add_child(Token(token_symbol_rule_non_terminal, "pair"));
 
-*/
+	token_symbol_rule_2_1.add_child(Token(token_symbol_rule_terminal, "#"));
 	AbstractSyntaxTree& token_symbol_rule_2_1_r = token_symbol_rule_2_1.add_child(token_symbol_rule_repetition);
 	token_symbol_rule_2_1_r.add_child(Token(token_symbol_rule_non_terminal, "pair"));
-
+	token_symbol_rule_2_1.add_child(Token(token_symbol_rule_terminal, "#"));
 
 	AbstractSyntaxTree& rule_3_node = rule_list_node.add_child(token_symbol_rule);
 	rule_3_node.add_child(Token(token_symbol_rule_name, "pair"));
 	rule_3_node.add_child(token_symbol_unamed_terminal);
 	AbstractSyntaxTree& token_symbol_rule_3_definition_alternative = rule_3_node.add_child(token_symbol_rule_definition_alternative);
-	/*AbstractSyntaxTree& token_symbol_rule_3_1 = token_symbol_rule_3_definition_alternative.add_child(token_symbol_rule_definition);
+	AbstractSyntaxTree& token_symbol_rule_3_1 = token_symbol_rule_3_definition_alternative.add_child(token_symbol_rule_definition);
 	token_symbol_rule_3_1.add_child(Token(token_symbol_rule_terminal, "("));
-	token_symbol_rule_3_1.add_child(Token(token_symbol_rule_non_terminal, "pair"));
-	token_symbol_rule_3_1.add_child(Token(token_symbol_rule_terminal, ")"));*/
-	AbstractSyntaxTree& token_symbol_rule_3_2 = token_symbol_rule_3_definition_alternative.add_child(token_symbol_rule_definition);
-	token_symbol_rule_3_2.add_child(Token(token_symbol_rule_terminal, "("));
-	token_symbol_rule_3_2.add_child(Token(token_symbol_rule_terminal, ")"));
+	AbstractSyntaxTree& token_symbol_rule_3_1_1 = token_symbol_rule_3_1.add_child(token_symbol_rule_optional);
+	token_symbol_rule_3_1_1.add_child(Token(token_symbol_rule_non_terminal, "list"));
+	token_symbol_rule_3_1.add_child(Token(token_symbol_rule_terminal, ")"));
+*/
 /*
 	AbstractSyntaxTree& rule_1_node = rule_list_node.add_child(token_symbol_rule);
 	rule_1_node.add_child(Token(token_symbol_rule_name, "identifier"));

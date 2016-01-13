@@ -48,11 +48,15 @@ bool TokenSymbol::operator<(const TokenSymbol& that) const {
 //	Token
 //
 
-Token::Token(const TokenSymbol& type) : _type(type), _content(nullptr) {
+Token::Token() : _type(nullptr), _content(nullptr) {
 
 }
 
-Token::Token(const TokenSymbol& type, const char* owner_content) : _type(type), _content(nullptr) {
+Token::Token(const TokenSymbol& type) : _type(&type), _content(nullptr) {
+
+}
+
+Token::Token(const TokenSymbol& type, const char* owner_content) : _type(&type), _content(nullptr) {
 	unsigned int size = std::strlen(owner_content);
 	_content = new char[size+1];
 	memcpy(_content, owner_content, size+1);
@@ -70,8 +74,20 @@ Token::~Token() {
 	delete[] _content;
 }
 
+void Token::set(const TokenSymbol& type, const char* content) {
+	_type = &type;
+	delete[] _content;
+	if(content != nullptr) {
+		unsigned int size = std::strlen(content);
+		_content = new char[size+1];
+		memcpy(_content, content, size+1);
+	}
+	else
+		_content = nullptr;
+}
+
 const TokenSymbol& Token::type() const {
-	return _type;
+	return *_type;
 }
 
 const char* Token::content() const {

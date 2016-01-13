@@ -26,7 +26,7 @@ namespace cliff {
 		static const int Direct_letter_range = 128;
 
 		static const State Parser_init_state;
-		static const Index Parser_unaccepting_state = 0xFFFFFFFF;
+		static const Index Parser_unaccepting_state;
 		static const Index Parser_action_shift_mask = 0x80000000;
 		static const Index Parser_action_reduce_mask = 0x40000000;
 		static const Index Parser_action_accept_mask = 0x20000000;
