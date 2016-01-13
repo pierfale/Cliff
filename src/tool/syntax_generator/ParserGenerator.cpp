@@ -104,9 +104,17 @@ void ParserGenerator::goto_procedure(const Syntax& ebnf_syntax, const Syntax& ge
 	output_set.erase_duplicate();
 }
 
+void ParserGenerator::set_action_table_or_else(Syntax& output_syntax, unsigned int index, unsigned int action, unsigned int reduce_number, exception::UserMessage&& exception) {
+	if(output_syntax.parser_action_table()[index] == action || output_syntax.parser_action_table()[index] == Syntax::Parser_unaccepting_state) {
+		output_syntax.parser_action_table()[index] = action;
+		output_syntax.parser_reduce_number()[index] = reduce_number;
+	}
+	else
+		throw exception;
+}
+
 void ParserGenerator::generate_parser(const Syntax& ebnf_syntax, Syntax& output_syntax, const SyntaxRepresentation& syntax_representation, const std::vector<Set>& set_list) {
 	output_syntax.set_parser_table(set_list.size(), syntax_representation.dummy_rule_name().size());
-
 
 	for(unsigned int set_index = 0; set_index < set_list.size(); set_index++) {
 		for(auto it_symbol = output_syntax.begin_terminal(); it_symbol != output_syntax.end_terminal(); ++it_symbol) {
@@ -117,25 +125,28 @@ void ParserGenerator::generate_parser(const Syntax& ebnf_syntax, Syntax& output_
 			int j;
 			if(item.cursor == item.rule->sequence().size()) {
 
-				if(*item.next_token == output_syntax.get_symbol_from_name(Syntax::EOF_symbol) && item.rule->rule_name() == output_syntax.get_symbol_from_name(Syntax::Root_symbol)) {
+				if(*item.next_token == output_syntax.get_symbol_from_name(Syntax::EOF_symbol) && item.rule->rule_name() == output_syntax.get_symbol_from_name(Syntax::Root_symbol)) // Accept action
 					output_syntax.parser_action_table()[output_syntax.index_of_symbol(*item.next_token)*set_list.size()+set_index] = Syntax::Parser_action_accept_mask;
-				}
 				else {
-					output_syntax.parser_action_table()[output_syntax.index_of_symbol(*item.next_token)*set_list.size()+set_index] = Syntax::Parser_action_reduce_mask
+					set_action_table_or_else(output_syntax, output_syntax.index_of_symbol(*item.next_token)*set_list.size()+set_index,
+								Syntax::Parser_action_reduce_mask
 								| (item.rule->flags() & SyntaxRepresentation::ListHead ? Syntax::Parser_action_dummy_state_mask : 0)
 								| (item.rule->flags() & SyntaxRepresentation::ListTail ? Syntax::Parser_action_skip_state_mask : 0)
 								| (item.rule->flags() & SyntaxRepresentation::ListReduce && syntax_representation.is_dummy_symbol_value(item.rule->sequence().back().content()) ? Syntax::Parser_action_replace_state_mask : 0)
 								| (syntax_representation.is_dummy_symbol_value(item.rule->rule_name()) ?
 									(std::distance(output_syntax.begin_non_terminal(),  output_syntax.end_non_terminal())+
 									 std::distance(std::begin(syntax_representation.dummy_rule_name()), std::find(std::begin(syntax_representation.dummy_rule_name()), std::end(syntax_representation.dummy_rule_name()), item.rule->rule_name())))
-									: output_syntax.index_of_symbol(item.rule->rule_name()));
-
-					output_syntax.parser_reduce_number()[output_syntax.index_of_symbol(*item.next_token)*set_list.size()+set_index] = item.rule->sequence().size();
+									: output_syntax.index_of_symbol(item.rule->rule_name())),
+							item.rule->sequence().size(),
+							exception::UserMessage(exception::UserMessage::Error, "Parser : reduce/reduce conflict"));
 				}
 			}
 			else if(item.rule->sequence()[item.cursor].is_terminal() && (j = find_goto(ebnf_syntax, output_syntax, syntax_representation, set_list[set_index], item.rule->sequence()[item.cursor].content(), set_list)) != -1) {
-				output_syntax.parser_action_table()[output_syntax.index_of_symbol(item.rule->sequence()[item.cursor].content())*set_list.size()+set_index] = Syntax::Parser_action_shift_mask | j
-						| ((item.rule->flags() & SyntaxRepresentation::ListReduce) && item.cursor > 0 && syntax_representation.is_dummy_symbol_value(item.rule->sequence()[item.cursor-1].content()) ? Syntax::Parser_action_replace_state_mask : 0);
+				set_action_table_or_else(output_syntax, output_syntax.index_of_symbol(item.rule->sequence()[item.cursor].content())*set_list.size()+set_index,
+						Syntax::Parser_action_shift_mask | j
+						| ((item.rule->flags() & SyntaxRepresentation::ListReduce) && item.cursor > 0 && syntax_representation.is_dummy_symbol_value(item.rule->sequence()[item.cursor-1].content()) ? Syntax::Parser_action_replace_state_mask : 0),
+						0,
+						exception::UserMessage(exception::UserMessage::Error, "Parser : shift/reduce conflict"));
 			}
 		}
 
