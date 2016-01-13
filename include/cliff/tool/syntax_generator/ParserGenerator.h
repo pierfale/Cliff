@@ -66,7 +66,7 @@ namespace cliff {
 				if(cursor == rule->sequence().size())
 					stream << " @";
 
-				stream << ", " << next_token->string() << std::endl;
+				stream << ", " << next_token->string() << ", flags=" << std::hex << rule->flags() << std::dec << std::endl;
 			}
 
 			const SyntaxRepresentation::InlinedAlternative* rule;
