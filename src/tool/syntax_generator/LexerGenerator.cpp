@@ -321,7 +321,13 @@ void LexerGenerator::generate_lexer(Syntax& output_syntax, const DeterministeFin
 		}
 
 		// TODO if several accepting on same state, eval priority.
-		if(node_list[state_index]->accepting_state().size() >= 1) {
+		if(node_list[state_index]->accepting_state().size() > 1) {
+			std::cout << "multiple accepting state :";
+			for(auto s : node_list[state_index]->accepting_state())
+				std::cout << " " << s->string();
+			std::cout << std::endl;
+		}
+		else if(node_list[state_index]->accepting_state().size() == 1) {
 			output_syntax.lexer_accepting_state()[state_index] = output_syntax.index_of_symbol(*node_list[state_index]->accepting_state()[0]);
 		}
 		else

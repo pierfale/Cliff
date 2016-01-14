@@ -12,6 +12,30 @@
 
 namespace cliff {
 
+	typedef uint32_t Letter;
+
+	class LetterRange {
+
+	public:
+		static const Letter Min_letter = 0x0;
+		static const Letter Max_letter = 0xFFFFFFFF;
+
+		LetterRange(Letter unique_letter);
+		LetterRange(Letter start_letter, Letter end_letter);
+
+		Letter start_range() const;
+		Letter end_range() const;
+
+
+		LetterRange& operator-(const LetterRange& that) const;
+		LetterRange& operator+(const LetterRange& that) const;
+		LetterRange& operator^(const LetterRange& that) const;
+
+	private:
+		Letter _start_range;
+		Letter _end_range;
+	};
+
 	class Automata {
 
 	public:
