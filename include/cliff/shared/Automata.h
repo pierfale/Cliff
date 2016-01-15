@@ -28,6 +28,7 @@ namespace cliff {
 		Letter end_range() const;
 
 		bool is_epsilon() const;
+		bool is_in_range(Letter letter) const;
 
 
 		LetterRange& operator-(const LetterRange& that);
@@ -39,15 +40,7 @@ namespace cliff {
 		Letter _end_range;
 	};
 
-	std::ostream& operator<<(std::ostream& stream, const LetterRange& that) {
-		if(that.is_epsilon())
-			stream << "Epsilon";
-		else if(that.start_range() == that.end_range())
-			stream << (char)that.start_range();
-		else
-			stream << (char)that.start_range() << "-" << (char)that.end_range();
-		return stream;
-	}
+	std::ostream& operator<<(std::ostream& stream, const LetterRange& that);
 
 	class Automata {
 

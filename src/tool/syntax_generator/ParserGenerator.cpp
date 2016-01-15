@@ -11,14 +11,14 @@ void ParserGenerator::generate_parser(const Syntax& ebnf_syntax, Syntax& output_
 	closure_procedure(ebnf_syntax, output_syntax, syntax_representation, set_list.back());
 
 	construct_closure_set(ebnf_syntax, output_syntax, syntax_representation, set_list);
-/*
+
 	for(const Set& set : set_list) {
 		std::cout << "====SET==== (" << set.predecessor_set << ",\"" << (set.transition_symbol != nullptr ? set.transition_symbol->string() : "none") << "\"" << std::endl;
 		for(const Item& item : set.item_list) {
 			item.print(std::cout);
 		}
 	}
-*/
+
 	generate_parser(ebnf_syntax, output_syntax, syntax_representation, set_list);
 }
 

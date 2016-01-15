@@ -54,9 +54,9 @@ NonDeterministeFiniteAutomataNode& LexerGenerator::create_regular_expression_nfa
 		for(const AbstractSyntaxTree* node : current_tree_node.children()) {
 
 			if(node->type() == ebnf_syntax.get_symbol_from_name("regular_expression_letter"))
-				current_automata_node = &current_automata_node->create_output_node(node->content()[0]);
+				current_automata_node = &current_automata_node->create_output_node(LetterRange(node->content()[0]));
 			else if(node->type() == ebnf_syntax.get_symbol_from_name("regular_expression_letter_all"))
-				current_automata_node = &current_automata_node->create_output_node(LetterRange::Min_letter, LetterRange::Max_letter);
+				current_automata_node = &current_automata_node->create_output_node(LetterRange(LetterRange::Min_letter, LetterRange::Max_letter));
 
 			 // TODO create alphabet for ranged transition
 			 /*if(std::find(std::begin(alphabet), std::end(alphabet), node->content()[0]) == std::end(alphabet))
@@ -169,8 +169,8 @@ bool LexerGenerator::epsilon_closure(const NonDeterministeFiniteAutomataNode& nf
 		state_stack.pop();
 
 		for(const auto& output_state : current_state->transitions()) {
-			if((output_state.first.is_epsilon() || (!f && output_state.first == letter)) && std::find(std::begin(output_list), std::end(output_list), output_state.second) == std::end(output_list)) {
-				if(output_state.first == letter) {
+			if((output_state.first.is_epsilon() || (!f && output_state.first.is_in_range(letter))) && std::find(std::begin(output_list), std::end(output_list), output_state.second) == std::end(output_list)) {
+				if(output_state.first.is_in_range(letter)) {
 					found = true;
 					state_stack.push(std::make_pair(output_state.second, true));
 					output_list.push_back(output_state.second);

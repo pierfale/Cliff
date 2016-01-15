@@ -47,7 +47,8 @@ void SyntaxGenerator::execute(ProgramOption::Iterator option_caller) {
 
 												//Regular expression
 												"regular_expression", "regular_expression_alternative", "regular_expression_repetition",
-												"regular_expression_letter_list", "regular_expression_letter", "regular_expression_letter_all"};
+												"regular_expression_letter_list", "regular_expression_letter", "regular_expression_letter_all",
+												"regular_expression_range"};
 
 	syntax.set_symbol_table(symbols_name, 0);
 
@@ -64,6 +65,7 @@ void SyntaxGenerator::execute(ProgramOption::Iterator option_caller) {
 
 	const TokenSymbol& token_symbol_regular_expression = syntax.get_symbol_from_name("regular_expression");
 	const TokenSymbol& token_symbol_regular_expression_letter_list = syntax.get_symbol_from_name("regular_expression_letter_list");
+	const TokenSymbol& token_symbol_regular_expression_range = syntax.get_symbol_from_name("regular_expression_range");
 	const TokenSymbol& token_symbol_regular_expression_letter = syntax.get_symbol_from_name("regular_expression_letter");
 	const TokenSymbol& token_symbol_regular_expression_letter_all = syntax.get_symbol_from_name("regular_expression_letter_all");
 	const TokenSymbol& token_symbol_regular_expression_alternative = syntax.get_symbol_from_name("regular_expression_alternative");
@@ -200,7 +202,7 @@ void SyntaxGenerator::execute(ProgramOption::Iterator option_caller) {
 	token_symbol_rule_3_2.add_child(Token(token_symbol_rule_non_terminal, "regular_expression_range"));
 	AbstractSyntaxTree& token_symbol_rule_3_2_ = token_symbol_rule_3_2.add_child(token_symbol_rule_optional);
 	token_symbol_rule_3_2_.add_child(Token(token_symbol_rule_non_terminal, "regular_expression_quantifier"));
-
+/*
 	// regular_expression_letter := "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" | "a" | "b" | "c" | "d" | "e" | "." ...
 	AbstractSyntaxTree& rule_4_node = rule_list_node.add_child(token_symbol_rule);
 	rule_4_node.add_child(Token(token_symbol_rule_name, "regular_expression_letter"));
@@ -217,8 +219,8 @@ void SyntaxGenerator::execute(ProgramOption::Iterator option_caller) {
 	AbstractSyntaxTree& token_symbol_rule_4_5 = token_symbol_rule_4_definition_alternative.add_child(token_symbol_rule_definition);
 	token_symbol_rule_4_5.add_child(Token(token_symbol_rule_terminal, "e"));
 	AbstractSyntaxTree& token_symbol_rule_4_6 = token_symbol_rule_4_definition_alternative.add_child(token_symbol_rule_definition);
-	token_symbol_rule_4_6.add_child(Token(token_symbol_regular_expression_letter_all));
-
+	token_symbol_rule_4_6.add_child(Token(token_symbol_rule_terminal, "."));
+*/
 	// regular_expression_range := "[" regular_expression_range_block* "]"
 	AbstractSyntaxTree& rule_5_node = rule_list_node.add_child(token_symbol_rule);
 	rule_5_node.add_child(Token(token_symbol_rule_name, "regular_expression_range"));
@@ -253,6 +255,18 @@ void SyntaxGenerator::execute(ProgramOption::Iterator option_caller) {
 	token_symbol_rule_8_2.add_child(Token(token_symbol_rule_terminal, "*"));
 	AbstractSyntaxTree& token_symbol_rule_8_3 = token_symbol_rule_8_definition_alternative.add_child(token_symbol_rule_definition);
 	token_symbol_rule_8_3.add_child(Token(token_symbol_rule_terminal, "?"));
+
+	// all_characters := #[^\[\]]#
+	AbstractSyntaxTree& rule_9_node = rule_list_node.add_child(token_symbol_rule);
+	rule_9_node.add_child(Token(token_symbol_rule_name, "regular_expression_letter"));
+	rule_9_node.add_child(token_symbol_unamed_terminal);
+	AbstractSyntaxTree& rule_9_re = rule_9_node.add_child(token_symbol_regular_expression);
+	/*AbstractSyntaxTree& rule_9_re_1 = rule_9_re.add_child(token_symbol_regular_expression_range);
+	rule_9_re_1.add_child(Token(token_symbol_rule_terminal, "[^"));
+	rule_9_re_1.add_child(Token(token_symbol_rule_terminal, "["));
+	rule_9_re_1.add_child(Token(token_symbol_rule_terminal, "]"));
+	rule_9_re_1.add_child(Token(token_symbol_rule_terminal, "["));*/
+
 
 	//
 	//	Parenthesis

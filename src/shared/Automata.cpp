@@ -31,6 +31,9 @@ bool LetterRange::is_epsilon() const {
 	return _start_range == Max_letter && _end_range == Max_letter;
 }
 
+bool LetterRange::is_in_range(Letter letter) const {
+	return _start_range >= letter && _end_range <= letter;
+}
 
 LetterRange& LetterRange::operator-(const LetterRange& that) {
 	return *this;
@@ -42,4 +45,14 @@ LetterRange& LetterRange::operator+(const LetterRange& that) {
 
 LetterRange& LetterRange::operator^(const LetterRange& that) {
 	return *this;
+}
+
+std::ostream& cliff::operator<<(std::ostream& stream, const LetterRange& that) {
+	if(that.is_epsilon())
+		stream << "Epsilon";
+	else if(that.start_range() == that.end_range())
+		stream << (char)that.start_range();
+	else
+		stream << (char)that.start_range() << "-" << (char)that.end_range();
+	return stream;
 }
