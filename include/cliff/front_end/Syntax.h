@@ -62,13 +62,11 @@ namespace cliff {
 		// Lexer
 		//
 		State next_lexer_state(State current_state, Letter current_letter) const;
-		const TokenSymbol* lexer_accepting_state(State current_state) const;
+		const TokenSymbol* lexer_accepting_state(State current_state, State parser_state) const;
 
 		void set_lexer_table(unsigned int state_number);
 		State* lexer_table();
 		const State* lexer_table() const;
-		Index* lexer_accepting_state();
-		const Index* lexer_accepting_state() const;
 
 		//
 		// Parser
@@ -87,6 +85,19 @@ namespace cliff {
 
 		Index* parser_reduce_number();
 		const Index* parser_reduce_number() const;
+
+		//
+		//	Mixed
+		//
+
+		void set_lexer_parser_table(unsigned int lexer_accepting_state_number, unsigned int parser_state_number);
+
+		Index* lexer_accepting_state_table();
+		const Index* lexer_accepting_state_table() const;
+
+		Index* lexer_accepting_state_assoc_table();
+		const Index* lexer_accepting_state_assoc_table() const;
+
 
 	private:
 		//
@@ -108,7 +119,6 @@ namespace cliff {
 		//
 		unsigned int _lexer_state_number;
 		State* _lexer_table;
-		Index* _lexer_accepting_state;
 
 		//
 		//	Parser
@@ -117,6 +127,13 @@ namespace cliff {
 		unsigned int _parser_dummy_rule_number;
 		Index* _action_table;
 		Index* _reduce_number;
+
+		//
+		//	Mixed
+		//
+		Index* _lexer_accepting_state_table;
+		Index* _lexer_accepting_state_assoc_table;
+		unsigned int _lexer_accepting_state_number;
 
 		Index* _goto_table;
 		std::tuple<const TokenSymbol*, unsigned int> _reduce_table;

@@ -13,7 +13,7 @@ namespace cliff {
 	class ParserGenerator {
 
 	public:
-		static void generate_parser(const Syntax& ebnf_syntax, Syntax& output_syntax, SyntaxRepresentation& syntax_representation);
+		static void generate_parser(const Syntax& ebnf_syntax, Syntax& output_syntax, SyntaxRepresentation& syntax_representation, std::map<const TokenSymbol*, std::vector<unsigned int>>& accepting_states);
 
 	private:
 
@@ -103,10 +103,11 @@ namespace cliff {
 		static void construct_closure_set(const Syntax& ebnf_syntax, const Syntax& generated_syntax, const SyntaxRepresentation& syntax_representation, std::vector<Set>& output);
 		static void closure_procedure(const Syntax& ebnf_syntax, const Syntax& generated_syntax, const SyntaxRepresentation& syntax_representation, Set& output_set);
 		static void goto_procedure(const Syntax& ebnf_syntax, const Syntax& generated_syntax, const SyntaxRepresentation& syntax_representation, const Set& input_set, const TokenSymbol& symbol, Set& output_set);
-		static void generate_parser(const Syntax& ebnf_syntax, Syntax& output_syntax, const SyntaxRepresentation& syntax_representation, const std::vector<Set>& set_list);
+		static void generate_parser(const Syntax& ebnf_syntax, Syntax& output_syntax, const SyntaxRepresentation& syntax_representation, const std::vector<Set>& set_list, std::map<const TokenSymbol*, std::vector<unsigned int>>& accepting_states);
 		static int find_goto(const Syntax& ebnf_syntax, const Syntax& generated_syntax, const SyntaxRepresentation& syntax_representation, const Set& input_set, const TokenSymbol& symbol, const std::vector<Set>& set_list);
 
 		static void set_action_table_or_else(Syntax& output_syntax, unsigned int index, unsigned int action, unsigned int reduce_number, exception::UserMessage&& exception);
+		static void set_lexer_accepting_state_or_else(Syntax& output_syntax, unsigned int index, unsigned int value, exception::UserMessage&& exception);
 	};
 }
 #endif

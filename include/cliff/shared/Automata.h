@@ -19,35 +19,44 @@ namespace cliff {
 	public:
 		static const Letter Min_letter = 0x0;
 		static const Letter Max_letter = 0xFFFFFFFF;
+		static LetterRange Epsilon_range;
 
 		LetterRange();
 		LetterRange(Letter unique_letter);
 		LetterRange(Letter start_letter, Letter end_letter);
+		LetterRange(const LetterRange& that);
+		LetterRange(LetterRange&& that);
 
-		Letter start_range() const;
-		Letter end_range() const;
+		const std::vector<std::pair<Letter, Letter>>& range() const;
 
 		bool is_epsilon() const;
 		bool is_in_range(Letter letter) const;
 
 
+		void reset();
+		void intersection(const LetterRange& that, LetterRange& output) const;
+
 		LetterRange& operator-(const LetterRange& that);
 		LetterRange& operator+(const LetterRange& that);
 		LetterRange& operator^(const LetterRange& that);
 
+		LetterRange& operator-=(const LetterRange& that);
+
+		bool operator==(const LetterRange& that) const;
+		bool operator!=(const LetterRange& that) const;
+		bool operator<(const LetterRange& that) const;
+
+		void to_letter_list(std::vector<Letter>& list) const;
+
+
 	private:
-		Letter _start_range;
-		Letter _end_range;
+		void reorder();
+
+		std::vector<std::pair<Letter, Letter>> _range;
+
 	};
 
 	std::ostream& operator<<(std::ostream& stream, const LetterRange& that);
-
-	class Automata {
-
-	public:
-		typedef int Symbol;
-		static const Symbol Epsilon = -1;
-	};
 
 	class AutomaUtility {
 
@@ -66,22 +75,12 @@ namespace cliff {
 
 			trace.push_back(&model);
 
-			stream  << &model << (model.is_accepting_state() ? " [final state]" : "") << " : " << std::endl;
+			stream  << &model << (model.is_accepting_state() ? " [accepting_state :" : "");
+			for(const auto& state : model.accepting_state())
+				stream << " \"" << state->string() << "\"";
+			stream << (model.is_accepting_state() ? "]" : "") << std::endl;
 
 			for(const auto& transition : model.transitions()) {
-				std::string t_label;
-/*
-				switch(transition.first) {
-
-				case Automata::Epsilon:
-					t_label = "Epsilon";
-					break;
-				default:
-					t_label = (char)transition.first;
-				}*/
-
-
-
 				stream  << "--[" << transition.first << "]-->" << transition.second << std::endl;
 			}
 
@@ -101,28 +100,28 @@ namespace cliff {
 
 		}
 
-		void create_output_transition_with(AutomataNode& node, Automata::Symbol symbol) {
-			_transitions.insert(std::make_pair(symbol, &node));
+		void create_output_transition_with(AutomataNode& node, const LetterRange& range) {
+			_transitions.emplace(std::piecewise_construct, std::forward_as_tuple(range), std::forward_as_tuple(&node));
 		}
 
-		void create_input_transition_with(AutomataNode& node, Automata::Symbol symbol) {
-			node._transitions.insert(std::make_pair(symbol, this));
+		void create_input_transition_with(AutomataNode& node, const LetterRange& range) {
+			node._transitions.emplace(std::piecewise_construct, std::forward_as_tuple(range), std::forward_as_tuple(this));
 		}
 
-		void change_transition(Automata::Symbol symbol, AutomataNode& node) {
-			_transitions[symbol] = &node;
+		void change_transition(const LetterRange& range, AutomataNode& node) {
+			_transitions[range] = &node;
 		}
 
 
-		AutomataNode<Type>& create_output_node(Automata::Symbol symbol) {
+		AutomataNode<Type>& create_output_node(const LetterRange& range) {
 			AutomataNode<Type>& node = create_node();
-			create_output_transition_with(node, symbol);
+			create_output_transition_with(node, range);
 			return node;
 		}
 
-		AutomataNode<Type>& create_input_node(Automata::Symbol symbol) {
+		AutomataNode<Type>& create_input_node(const LetterRange& range) {
 			AutomataNode& node = create_node();
-			create_input_transition_with(node, symbol);
+			create_input_transition_with(node, range);
 			return node;
 		}
 
@@ -130,7 +129,7 @@ namespace cliff {
 			return _memory_container.emplace(_memory_container);
 		}
 
-		const std::map<Automata::Symbol, AutomataNode<Type>*>& transitions() const {
+		const std::map<LetterRange, AutomataNode<Type>*>& transitions() const {
 			return _transitions;
 		}
 
@@ -152,7 +151,7 @@ namespace cliff {
 		}
 	private:
 		MemoryContainer<AutomataNode<Type>>& _memory_container;
-		std::map<Automata::Symbol, AutomataNode<Type>*> _transitions;
+		std::map<LetterRange, AutomataNode<Type>*> _transitions;
 		std::vector<const TokenSymbol*> _accepting_state;
 
 	};
@@ -172,23 +171,23 @@ namespace cliff {
 
 		}
 
-		void create_output_transition_with(NonDeterministeFiniteAutomataNode& node, LetterRange range) {
-			_transitions.push_back(std::make_pair(range, &node));
+		void create_output_transition_with(NonDeterministeFiniteAutomataNode& node, const LetterRange& range) {
+			_transitions.emplace_back(range, &node);
 		}
 
-		void create_input_transition_with(NonDeterministeFiniteAutomataNode& node, Automata::Symbol symbol) {
-			node._transitions.push_back(std::make_pair(symbol, this));
+		void create_input_transition_with(NonDeterministeFiniteAutomataNode& node, const LetterRange& range) {
+			node._transitions.emplace_back(range, this);
 		}
 
-		NonDeterministeFiniteAutomataNode& create_output_node(LetterRange range) {
+		NonDeterministeFiniteAutomataNode& create_output_node(const LetterRange& range) {
 			NonDeterministeFiniteAutomataNode& node = create_node();
 			create_output_transition_with(node, range);
 			return node;
 		}
 
-		NonDeterministeFiniteAutomataNode& create_input_node(Automata::Symbol symbol) {
+		NonDeterministeFiniteAutomataNode& create_input_node(const LetterRange& range) {
 			AutomataNode& node = create_node();
-			create_input_transition_with(node, symbol);
+			create_input_transition_with(node, range);
 			return node;
 		}
 

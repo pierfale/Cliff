@@ -13,17 +13,19 @@ namespace cliff {
 	class LexerGenerator {
 
 	public:
-		static void generate_lexer(const Syntax& ebnf_syntax, const AbstractSyntaxTree& syntax_tree, Syntax& output_syntax);
+		static void generate_lexer(const Syntax& ebnf_syntax, const AbstractSyntaxTree& syntax_tree, Syntax& output_syntax, std::map<const TokenSymbol*, std::vector<unsigned int>>& accepting_state);
 
 	private:
 		LexerGenerator() = delete;
 
-		static NonDeterministeFiniteAutomataNode& create_regular_expression_nfa(const Syntax& ebnf_syntax, const AbstractSyntaxTree& current_tree_node, NonDeterministeFiniteAutomataNode& start_automata_node, std::vector<Automata::Symbol>& alphabet, Syntax& output_syntax);
-		static void create_dfa(const Syntax& ebnf_syntax, const NonDeterministeFiniteAutomataNode& start_nfa_node, DeterministeFiniteAutomataNode& start_dfa_node, const std::vector<Automata::Symbol>& alphabet);
-		static bool epsilon_closure(const NonDeterministeFiniteAutomataNode& nfa_node, std::vector<const NonDeterministeFiniteAutomataNode*>& output_list, Automata::Symbol letter = Automata::Epsilon);
-		static void reduce_dfa(const Syntax& ebnf_syntax, DeterministeFiniteAutomataNode& start_node, const std::vector<Automata::Symbol>& alphabet);
+		static void get_terminal_content(const Syntax& ebnf_syntax, const AbstractSyntaxTree& syntax_tree, std::vector<const char*>& symbols_content);
+		static NonDeterministeFiniteAutomataNode& create_regular_expression_nfa(const Syntax& ebnf_syntax, const AbstractSyntaxTree& current_tree_node, NonDeterministeFiniteAutomataNode& start_automata_node, Syntax& output_syntax);
+		static void create_dfa(const Syntax& ebnf_syntax, const NonDeterministeFiniteAutomataNode& start_nfa_node, DeterministeFiniteAutomataNode& start_dfa_node);
+		static bool epsilon_closure(const NonDeterministeFiniteAutomataNode& nfa_node, std::vector<const NonDeterministeFiniteAutomataNode*>& output_list, LetterRange range);
+		static void reduce_dfa(const Syntax& ebnf_syntax, DeterministeFiniteAutomataNode& start_node);
+		static void segment_output_range(const NonDeterministeFiniteAutomataNode& nfa_node, std::map<LetterRange, std::vector<const NonDeterministeFiniteAutomataNode*>>& output_list);
 		static bool is_equal_transition(const DeterministeFiniteAutomataNode* node_1, const DeterministeFiniteAutomataNode* node_2);
-		static void generate_lexer(Syntax& output_syntax, const DeterministeFiniteAutomataNode& start_node);
+		static void generate_lexer(Syntax& output_syntax, const DeterministeFiniteAutomataNode& start_node, std::map<const TokenSymbol*, std::vector<unsigned int>>& accepting_state);
 	};
 }
 #endif

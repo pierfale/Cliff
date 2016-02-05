@@ -1,1 +1,5 @@
 root := definition*
+
+
+regular_expression_range_block := regular_expression_letter | regular_expression_letter "-" regular_expression_letter % todo : semantics analyser
+regular_expression_letter := #[^\[\]]#

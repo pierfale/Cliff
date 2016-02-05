@@ -3,6 +3,7 @@
 using namespace cliff;
 
 SyntaxRepresentation::SyntaxRepresentation(const Syntax& ebnf_syntax, const Syntax& generated_syntax, const AbstractSyntaxTree& input_syntax) : _entry_rule(nullptr) {
+	fill_regular_expression(ebnf_syntax, generated_syntax, input_syntax);
 	construct_dummy_symbol(ebnf_syntax, generated_syntax, input_syntax);
 	RawRuleList rule_list;
 	_dummy_rule_cursor = 0;
@@ -46,24 +47,38 @@ void SyntaxRepresentation::construct_dummy_symbol(const Syntax& ebnf_syntax, con
 		construct_dummy_symbol(ebnf_syntax, generated_syntax, *child);
 }
 
+void SyntaxRepresentation::fill_regular_expression(const Syntax& ebnf_syntax, const Syntax& generated_syntax, const AbstractSyntaxTree& current_node) {
+	if(current_node.type() == ebnf_syntax.get_symbol_from_name("rule")) {
+		if(current_node.children()[2]->type() == ebnf_syntax.get_symbol_from_name("regular_expression"))
+			_regular_expression_names.emplace_back(&generated_syntax.get_symbol_from_name(current_node.children()[0]->content()));
+	}
+	else {
+		for(const AbstractSyntaxTree* child : current_node.children())
+			fill_regular_expression(ebnf_syntax, generated_syntax, *child);
+	}
+}
+
 void SyntaxRepresentation::construct(const Syntax& ebnf_syntax, const Syntax& generated_syntax, const AbstractSyntaxTree& current_node, RawRuleList& rule_list) {
 	if(current_node.type() == ebnf_syntax.get_symbol_from_name("rule")) {
-		const TokenSymbol& rule_name = generated_syntax.get_symbol_from_name(current_node.children()[0]->content());
 
-		if(_entry_rule == nullptr) { //first rule
-			const TokenSymbol& root_symbol = generated_syntax.get_symbol_from_name(Syntax::Root_symbol);
-			rule_list.emplace(std::piecewise_construct, std::forward_as_tuple(&root_symbol), std::forward_as_tuple(RuleDefinition::NonTerminal, &rule_name));
-			_entry_rule = &root_symbol;
+		if(current_node.children()[2]->type() != ebnf_syntax.get_symbol_from_name("regular_expression")) {
+			const TokenSymbol& rule_name = generated_syntax.get_symbol_from_name(current_node.children()[0]->content());
+
+			if(_entry_rule == nullptr) { //first rule
+				const TokenSymbol& root_symbol = generated_syntax.get_symbol_from_name(Syntax::Root_symbol);
+				rule_list.emplace(std::piecewise_construct, std::forward_as_tuple(&root_symbol), std::forward_as_tuple(RuleDefinition::NonTerminal, &rule_name));
+				_entry_rule = &root_symbol;
+			}
+
+
+			if(rule_list.find(&rule_name) != std::end(rule_list)) {
+				THROW(exception::UserMessage, exception::UserMessage::Error, "Rule "+std::string(rule_name.string())+" already declared"); //TODO add line number/file
+			}
+
+			auto it_rule = rule_list.emplace(std::piecewise_construct, std::forward_as_tuple(&rule_name), std::forward_as_tuple(RuleDefinition::Alternative)).first;
+			for(const AbstractSyntaxTree* child : current_node.children()[2]->children())
+				construct_rule(ebnf_syntax, generated_syntax, rule_list, *child,  it_rule->second, rule_name);
 		}
-
-
-		if(rule_list.find(&rule_name) != std::end(rule_list)) {
-			THROW(exception::UserMessage, exception::UserMessage::Error, "Rule "+std::string(rule_name.string())+" already declared"); //TODO add line number/file
-		}
-
-		auto it_rule = rule_list.emplace(std::piecewise_construct, std::forward_as_tuple(&rule_name), std::forward_as_tuple(RuleDefinition::Alternative)).first;
-		for(const AbstractSyntaxTree* child : current_node.children()[2]->children())
-			construct_rule(ebnf_syntax, generated_syntax, rule_list, *child,  it_rule->second, rule_name);
 	}
 	else {
 		for(const AbstractSyntaxTree* child : current_node.children())
@@ -104,7 +119,11 @@ void SyntaxRepresentation::construct_rule(const Syntax& ebnf_syntax, const Synta
 		current_rule.add_child(RuleDefinition::NonTerminal, &temporary_rule_symbol, ListReduce);
 	}
 	else if(current_node.type() == ebnf_syntax.get_symbol_from_name("rule_non_terminal")) {
-		current_rule.add_child(RuleDefinition::NonTerminal, &generated_syntax.get_symbol_from_name(current_node.content()));
+		const TokenSymbol& symbol = generated_syntax.get_symbol_from_name(current_node.content());
+		current_rule.add_child(std::find(std::begin(_regular_expression_names), std::end(_regular_expression_names), &symbol) == std::end(_regular_expression_names) ?
+								   RuleDefinition::NonTerminal : RuleDefinition::Terminal, &symbol);
+
+
 	}
 	else if(current_node.type() == ebnf_syntax.get_symbol_from_name("rule_terminal")) {
 		current_rule.add_child(RuleDefinition::Terminal, &generated_syntax.get_symbol_from_name(current_node.content()));

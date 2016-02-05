@@ -15,24 +15,13 @@ void SyntaxGenerator::execute(ProgramOption::Iterator option_caller) {
 
 	Syntax syntax;
 	syntax.load("syntax.bin");
+	Reader reader(filename);
+	Lexer lexer(syntax, reader);
+	Parser parser(syntax, lexer);
 
-	Lexer lexer(syntax);
-	Parser parser(syntax);
-
-	std::ifstream file(filename, std::ios::in);
-
-	if(!file.is_open()) {
-		THROW(exception::FileNotFound, filename);
-	}
-
-	std::stringstream char_stream;
-	char_stream << file.rdbuf();
-
-	std::vector<Token> token_stream;
-	lexer.execute(char_stream, token_stream);
 
 	MemoryContainer<AbstractSyntaxTree> ast_memory;
-	AbstractSyntaxTree& root = parser.execute(token_stream, ast_memory);
+	AbstractSyntaxTree& root = parser.execute(ast_memory);
 
 	std::cout << "Abstract Syntax Tree : " << std::endl;
 	root.print(std::cout);
@@ -48,7 +37,7 @@ void SyntaxGenerator::execute(ProgramOption::Iterator option_caller) {
 												//Regular expression
 												"regular_expression", "regular_expression_alternative", "regular_expression_repetition",
 												"regular_expression_letter_list", "regular_expression_letter", "regular_expression_letter_all",
-												"regular_expression_range"};
+												"regular_expression_range", "regular_expression_range_block"};
 
 	syntax.set_symbol_table(symbols_name, 0);
 
@@ -66,6 +55,7 @@ void SyntaxGenerator::execute(ProgramOption::Iterator option_caller) {
 	const TokenSymbol& token_symbol_regular_expression = syntax.get_symbol_from_name("regular_expression");
 	const TokenSymbol& token_symbol_regular_expression_letter_list = syntax.get_symbol_from_name("regular_expression_letter_list");
 	const TokenSymbol& token_symbol_regular_expression_range = syntax.get_symbol_from_name("regular_expression_range");
+	const TokenSymbol& token_symbol_regular_expression_range_block = syntax.get_symbol_from_name("regular_expression_range_block");
 	const TokenSymbol& token_symbol_regular_expression_letter = syntax.get_symbol_from_name("regular_expression_letter");
 	const TokenSymbol& token_symbol_regular_expression_letter_all = syntax.get_symbol_from_name("regular_expression_letter_all");
 	const TokenSymbol& token_symbol_regular_expression_alternative = syntax.get_symbol_from_name("regular_expression_alternative");
@@ -202,6 +192,7 @@ void SyntaxGenerator::execute(ProgramOption::Iterator option_caller) {
 	token_symbol_rule_3_2.add_child(Token(token_symbol_rule_non_terminal, "regular_expression_range"));
 	AbstractSyntaxTree& token_symbol_rule_3_2_ = token_symbol_rule_3_2.add_child(token_symbol_rule_optional);
 	token_symbol_rule_3_2_.add_child(Token(token_symbol_rule_non_terminal, "regular_expression_quantifier"));
+
 /*
 	// regular_expression_letter := "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" | "a" | "b" | "c" | "d" | "e" | "." ...
 	AbstractSyntaxTree& rule_4_node = rule_list_node.add_child(token_symbol_rule);
@@ -256,18 +247,35 @@ void SyntaxGenerator::execute(ProgramOption::Iterator option_caller) {
 	AbstractSyntaxTree& token_symbol_rule_8_3 = token_symbol_rule_8_definition_alternative.add_child(token_symbol_rule_definition);
 	token_symbol_rule_8_3.add_child(Token(token_symbol_rule_terminal, "?"));
 
-	// all_characters := #[^\[\]]#
+	// regular_expression_letter := #[^\[\]]#
 	AbstractSyntaxTree& rule_9_node = rule_list_node.add_child(token_symbol_rule);
 	rule_9_node.add_child(Token(token_symbol_rule_name, "regular_expression_letter"));
 	rule_9_node.add_child(token_symbol_unamed_terminal);
 	AbstractSyntaxTree& rule_9_re = rule_9_node.add_child(token_symbol_regular_expression);
-	/*AbstractSyntaxTree& rule_9_re_1 = rule_9_re.add_child(token_symbol_regular_expression_range);
-	rule_9_re_1.add_child(Token(token_symbol_rule_terminal, "[^"));
-	rule_9_re_1.add_child(Token(token_symbol_rule_terminal, "["));
-	rule_9_re_1.add_child(Token(token_symbol_rule_terminal, "]"));
-	rule_9_re_1.add_child(Token(token_symbol_rule_terminal, "["));*/
 
-
+	AbstractSyntaxTree& rule_9_re_1 = rule_9_re.add_child(token_symbol_regular_expression_range);
+	rule_9_re_1.add_child(Token(token_symbol_unamed_terminal, "[^"));
+	AbstractSyntaxTree& rule_9_re_1_1 = rule_9_re_1.add_child(token_symbol_regular_expression_range_block);
+	rule_9_re_1_1.add_child(Token(token_symbol_rule_terminal, "["));
+	AbstractSyntaxTree& rule_9_re_1_2 = rule_9_re_1.add_child(token_symbol_regular_expression_range_block);
+	rule_9_re_1_2.add_child(Token(token_symbol_rule_terminal, "]"));
+	AbstractSyntaxTree& rule_9_re_1_3 = rule_9_re_1.add_child(token_symbol_regular_expression_range_block);
+	rule_9_re_1_3.add_child(Token(token_symbol_rule_terminal, "#"));
+	AbstractSyntaxTree& rule_9_re_1_4 = rule_9_re_1.add_child(token_symbol_regular_expression_range_block);
+	rule_9_re_1_4.add_child(Token(token_symbol_rule_terminal, "+"));
+	AbstractSyntaxTree& rule_9_re_1_5 = rule_9_re_1.add_child(token_symbol_regular_expression_range_block);
+	rule_9_re_1_5.add_child(Token(token_symbol_rule_terminal, "*"));
+	AbstractSyntaxTree& rule_9_re_1_6 = rule_9_re_1.add_child(token_symbol_regular_expression_range_block);
+	rule_9_re_1_6.add_child(Token(token_symbol_rule_terminal, "?"));
+	AbstractSyntaxTree& rule_9_re_1_7 = rule_9_re_1.add_child(token_symbol_regular_expression_range_block);
+	rule_9_re_1_7.add_child(Token(token_symbol_rule_terminal, "-")); // wut ?
+	rule_9_re_1.add_child(Token(token_symbol_unamed_terminal, "]"));
+/*
+	rule_9_re.add_child(Token(token_symbol_regular_expression_letter, "a"));
+	AbstractSyntaxTree& rule_9_re_1 = rule_9_re.add_child(token_symbol_regular_expression_repetition);
+	AbstractSyntaxTree& rule_9_re_1_1 = rule_9_re_1.add_child(token_symbol_regular_expression_alternative);
+	rule_9_re_1_1.add_child(Token(token_symbol_regular_expression_letter, "b"));
+	rule_9_re_1_1.add_child(Token(token_symbol_regular_expression_letter, "c"));*/
 	//
 	//	Parenthesis
 	//
@@ -379,12 +387,13 @@ void SyntaxGenerator::create_syntax(const Syntax& ebnf_syntax, const AbstractSyn
 	std::cout << "===========" << std::endl;
 	std::cout << "   Lexer   " << std::endl;
 	std::cout << "===========" << std::endl;
-	LexerGenerator::generate_lexer(ebnf_syntax, ast, generated_syntax);
+	std::map<const TokenSymbol*, std::vector<unsigned int>> accepting_states;
+	LexerGenerator::generate_lexer(ebnf_syntax, ast, generated_syntax, accepting_states);
 
 	std::cout << "===========" << std::endl;
 	std::cout << "   Parser  " << std::endl;
 	std::cout << "===========" << std::endl;
-	ParserGenerator::generate_parser(ebnf_syntax, generated_syntax, syntax_representation);
+	ParserGenerator::generate_parser(ebnf_syntax, generated_syntax, syntax_representation, accepting_states);
 
 	generated_syntax.save("syntax.bin");
 
@@ -404,15 +413,17 @@ void SyntaxGenerator::create_syntax(const Syntax& ebnf_syntax, const AbstractSyn
 }
 
 void SyntaxGenerator::get_symbols_name(const Syntax& ebnf_syntax, const AbstractSyntaxTree& syntax_tree, std::vector<std::pair<const char*, bool>>& symbols_name) {
-	if(syntax_tree.type() == ebnf_syntax.get_symbol_from_name("rule_name")) {
-		symbols_name.push_back(std::make_pair(syntax_tree.content(), false));
-	}
-	else if(syntax_tree.type() == ebnf_syntax.get_symbol_from_name("rule_terminal")) {
+	if(syntax_tree.type() == ebnf_syntax.get_symbol_from_name("rule_terminal")) {
 		symbols_name.push_back(std::make_pair(syntax_tree.content(), true));
 	}
 	else if(syntax_tree.type() == ebnf_syntax.get_symbol_from_name("rule")) {
-		get_symbols_name(ebnf_syntax, *syntax_tree.children()[0], symbols_name);
-		get_symbols_name(ebnf_syntax, *syntax_tree.children()[2], symbols_name);
+		if(syntax_tree.children()[2]->type() == ebnf_syntax.get_symbol_from_name("regular_expression")) {
+			symbols_name.push_back(std::make_pair(syntax_tree.children()[0]->content(), true));
+		}
+		else {
+			symbols_name.push_back(std::make_pair(syntax_tree.children()[0]->content(), false));
+			get_symbols_name(ebnf_syntax, *syntax_tree.children()[2], symbols_name);
+		}
 	}
 	else {
 		for(const AbstractSyntaxTree* child : syntax_tree.children())

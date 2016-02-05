@@ -62,6 +62,7 @@ namespace cliff {
 		class Symbol {
 
 		public:
+
 			Symbol(const TokenSymbol& content, bool is_terminal);
 
 			bool is_terminal() const;
@@ -132,6 +133,7 @@ namespace cliff {
 
 	private:
 		void construct_dummy_symbol(const Syntax& ebnf_syntax, const Syntax& generated_syntax, const AbstractSyntaxTree& current_node);
+		void fill_regular_expression(const Syntax& ebnf_syntax, const Syntax& generated_syntax, const AbstractSyntaxTree& current_node);
 		void construct(const Syntax& ebnf_syntax, const Syntax& generated_syntax, const AbstractSyntaxTree& current_node, RawRuleList& rule_list);
 		void construct_rule(const Syntax& ebnf_syntax, const Syntax& generated_syntax, RawRuleList& rule_list, const AbstractSyntaxTree& current_node, RuleDefinition& current_rule, const TokenSymbol& current_rule_name);
 		void inline_rule(const Syntax& ebnf_syntax, const Syntax& generated_syntax, const RawRuleList& rule_list);
@@ -140,6 +142,7 @@ namespace cliff {
 		const TokenSymbol* _entry_rule;
 		std::map<const TokenSymbol*, Rule> _rule_list;
 		std::vector<TokenSymbol> _dummy_rule_name;
+		std::vector<const TokenSymbol*> _regular_expression_names;
 		unsigned int _dummy_rule_cursor;
 
 	};

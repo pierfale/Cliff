@@ -12,6 +12,7 @@
 #include "cliff/front_end/Syntax.h"
 #include "cliff/front_end/Lexer.h"
 #include "cliff/front_end/Parser.h"
+#include "cliff/front_end/Reader.h"
 #include "cliff/shared/AbstractSyntaxTree.h"
 #include "cliff/tool/syntax_generator/LexerGenerator.h"
 #include "cliff/tool/syntax_generator/ParserGenerator.h"

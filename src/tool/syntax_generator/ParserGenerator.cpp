@@ -2,7 +2,7 @@
 
 using namespace cliff;
 
-void ParserGenerator::generate_parser(const Syntax& ebnf_syntax, Syntax& output_syntax, SyntaxRepresentation& syntax_representation) {
+void ParserGenerator::generate_parser(const Syntax& ebnf_syntax, Syntax& output_syntax, SyntaxRepresentation& syntax_representation, std::map<const TokenSymbol*, std::vector<unsigned int>>& accepting_states) {
 
 	std::vector<Set> set_list;
 	set_list.emplace_back();
@@ -12,14 +12,15 @@ void ParserGenerator::generate_parser(const Syntax& ebnf_syntax, Syntax& output_
 
 	construct_closure_set(ebnf_syntax, output_syntax, syntax_representation, set_list);
 
+	/*int cpt = 0;
 	for(const Set& set : set_list) {
-		std::cout << "====SET==== (" << set.predecessor_set << ",\"" << (set.transition_symbol != nullptr ? set.transition_symbol->string() : "none") << "\"" << std::endl;
+		std::cout << "====SET==== " << cpt++ << " (" << set.predecessor_set << ",\"" << (set.transition_symbol != nullptr ? set.transition_symbol->string() : "none") << "\"" << std::endl;
 		for(const Item& item : set.item_list) {
 			item.print(std::cout);
 		}
-	}
+	}*/
 
-	generate_parser(ebnf_syntax, output_syntax, syntax_representation, set_list);
+	generate_parser(ebnf_syntax, output_syntax, syntax_representation, set_list, accepting_states);
 }
 
 void ParserGenerator::construct_closure_set(const Syntax& ebnf_syntax, const Syntax& generated_syntax, const SyntaxRepresentation& syntax_representation, std::vector<Set>& output) {
@@ -113,14 +114,28 @@ void ParserGenerator::set_action_table_or_else(Syntax& output_syntax, unsigned i
 		throw exception;
 }
 
-void ParserGenerator::generate_parser(const Syntax& ebnf_syntax, Syntax& output_syntax, const SyntaxRepresentation& syntax_representation, const std::vector<Set>& set_list) {
+void ParserGenerator::set_lexer_accepting_state_or_else(Syntax& output_syntax, unsigned int index, unsigned int value, exception::UserMessage&& exception) {
+	if(output_syntax.lexer_accepting_state_table()[index] == value || output_syntax.lexer_accepting_state_table()[index] == Syntax::Lexer_unaccepting_state) {
+		output_syntax.lexer_accepting_state_table()[index] = value;
+	}
+	else
+		throw exception;
+}
+
+void ParserGenerator::generate_parser(const Syntax& ebnf_syntax, Syntax& output_syntax, const SyntaxRepresentation& syntax_representation, const std::vector<Set>& set_list, std::map<const TokenSymbol*, std::vector<unsigned int>>& accepting_states) {
 	output_syntax.set_parser_table(set_list.size(), syntax_representation.dummy_rule_name().size());
+	output_syntax.set_lexer_parser_table(accepting_states.size(), set_list.size());
 
 	for(unsigned int set_index = 0; set_index < set_list.size(); set_index++) {
 		for(auto it_symbol = output_syntax.begin_terminal(); it_symbol != output_syntax.end_terminal(); ++it_symbol) {
 			output_syntax.parser_action_table()[(it_symbol-output_syntax.begin_terminal())*set_list.size()+set_index] = Syntax::Parser_unaccepting_state;
 			output_syntax.parser_reduce_number()[(it_symbol-output_syntax.begin_terminal())*set_list.size()+set_index] = 0;
 		}
+
+		for(unsigned int i=0; i<accepting_states.size(); i++)
+			output_syntax.lexer_accepting_state_table()[i*set_list.size()+set_index] = Syntax::Lexer_unaccepting_state;
+
+		// TODO initialize lexer accepting state
 		for(const Item& item : set_list[set_index].item_list) {
 			int j;
 			if(item.cursor == item.rule->sequence().size()) {
@@ -139,6 +154,15 @@ void ParserGenerator::generate_parser(const Syntax& ebnf_syntax, Syntax& output_
 									: output_syntax.index_of_symbol(item.rule->rule_name())),
 							item.rule->sequence().size(),
 							exception::UserMessage(exception::UserMessage::Error, "Parser : reduce/reduce conflict"));
+
+					for(const std::pair<const TokenSymbol*, std::vector<unsigned int>>& accepting_state : accepting_states) { // todo inverse key/value
+						if(*item.next_token == *accepting_state.first) {
+							for(unsigned int accepting_state_number : accepting_state.second) {
+								set_lexer_accepting_state_or_else(output_syntax, accepting_state_number*set_list.size()+set_index, std::distance(output_syntax.begin_terminal(), accepting_state.first),
+																  exception::UserMessage(exception::UserMessage::Error, "Parser : lexer accepting state conflict"));
+							}
+						}
+					}
 				}
 			}
 			else if(item.rule->sequence()[item.cursor].is_terminal() && (j = find_goto(ebnf_syntax, output_syntax, syntax_representation, set_list[set_index], item.rule->sequence()[item.cursor].content(), set_list)) != -1) {
@@ -147,6 +171,17 @@ void ParserGenerator::generate_parser(const Syntax& ebnf_syntax, Syntax& output_
 						| ((item.rule->flags() & SyntaxRepresentation::ListReduce) && item.cursor > 0 && syntax_representation.is_dummy_symbol_value(item.rule->sequence()[item.cursor-1].content()) ? Syntax::Parser_action_replace_state_mask : 0),
 						0,
 						exception::UserMessage(exception::UserMessage::Error, "Parser : shift/reduce conflict"));
+
+
+				for(const std::pair<const TokenSymbol*, std::vector<unsigned int>>& accepting_state : accepting_states) { // todo inverse key/value
+					if(item.rule->sequence()[item.cursor].content() == *accepting_state.first) {
+						for(unsigned int accepting_state_number : accepting_state.second) {
+							set_lexer_accepting_state_or_else(output_syntax, accepting_state_number*set_list.size()+set_index, std::distance(output_syntax.begin_terminal(), accepting_state.first),
+															  exception::UserMessage(exception::UserMessage::Error, "Parser : lexer accepting state conflict"));
+						}
+					}
+				}
+
 			}
 		}
 

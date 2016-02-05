@@ -9,7 +9,7 @@ const Syntax::State Syntax::Parser_init_state = 0x0;
 const Syntax::Index Syntax::Parser_unaccepting_state = 0xFFFFFFFF;
 
 Syntax::Syntax() : _symbol_number(0), _symbol_non_terminal_start(0), _symbol_table(nullptr),
-	_lexer_state_number(0), _lexer_table(nullptr), _lexer_accepting_state(nullptr),
+	_lexer_state_number(0), _lexer_table(nullptr), _lexer_accepting_state_table(nullptr), _lexer_accepting_state_assoc_table(nullptr),
 	_parser_state_number(0), _parser_dummy_rule_number(0), _action_table(nullptr), _goto_table(nullptr) {
 
 }
@@ -20,7 +20,8 @@ Syntax::~Syntax() {
 
 	std::free(_symbol_table);
 	delete[] _lexer_table;
-	delete[] _lexer_accepting_state;
+	delete[] _lexer_accepting_state_table;
+	delete[] _lexer_accepting_state_assoc_table;
 	delete[] _action_table;
 	delete[] _goto_table;
 }
@@ -65,8 +66,8 @@ void Syntax::load(const char* filename) {
 
 	set_lexer_table(lexer_state_number);
 
-	file.read((char*)_lexer_accepting_state, _lexer_state_number*sizeof(Index));
 	file.read((char*)_lexer_table, Direct_letter_range*_lexer_state_number*sizeof(State));
+	file.read((char*)_lexer_accepting_state_assoc_table, _lexer_state_number*sizeof(Index));
 
 	uint32_t parser_state_number;
 	file.read((char*)&parser_state_number, sizeof(uint32_t));
@@ -79,6 +80,13 @@ void Syntax::load(const char* filename) {
 	file.read((char*)_action_table, _parser_state_number*_symbol_non_terminal_start*sizeof(Index));
 	file.read((char*)_reduce_number, _parser_state_number*_symbol_non_terminal_start*sizeof(Index));
 	file.read((char*)_goto_table, _parser_state_number*(_symbol_number-_symbol_non_terminal_start+_parser_dummy_rule_number)*sizeof(Index));
+
+	uint32_t lexer_accepting_state_number;
+	file.read((char*)&lexer_accepting_state_number, sizeof(uint32_t));
+
+	set_lexer_parser_table(lexer_accepting_state_number, parser_state_number);
+
+	file.read((char*)_lexer_accepting_state_table, _lexer_accepting_state_number*_parser_state_number*sizeof(Index));
 
 	file.close();
 }
@@ -104,8 +112,8 @@ void Syntax::save(const char* filename) {
 	uint32_t lexer_state_number = _lexer_state_number;
 	file.write((char*)&lexer_state_number, sizeof(uint32_t));
 
-	file.write((char*)_lexer_accepting_state, _lexer_state_number*sizeof(Index));
 	file.write((char*)_lexer_table, Direct_letter_range*_lexer_state_number*sizeof(State));
+	file.write((char*)_lexer_accepting_state_assoc_table, _lexer_state_number*sizeof(Index));
 
 	uint32_t parser_state_number = _parser_state_number;
 	file.write((char*)&parser_state_number, sizeof(uint32_t));
@@ -116,6 +124,11 @@ void Syntax::save(const char* filename) {
 	file.write((char*)_action_table, _parser_state_number*_symbol_non_terminal_start*sizeof(Index));
 	file.write((char*)_reduce_number, _parser_state_number*_symbol_non_terminal_start*sizeof(Index));
 	file.write((char*)_goto_table, _parser_state_number*(_symbol_number-_symbol_non_terminal_start+_parser_dummy_rule_number)*sizeof(Index));
+
+	uint32_t lexer_accepting_state_number = _lexer_accepting_state_number;
+	file.write((char*)&lexer_accepting_state_number, sizeof(uint32_t));
+
+	file.write((char*)_lexer_accepting_state_table, _lexer_accepting_state_number*_parser_state_number*sizeof(Index));
 
 	file.close();
 }
@@ -190,14 +203,19 @@ Syntax::State Syntax::next_lexer_state(State current_state, Letter current_lette
 		return 0; //TODO
 }
 
-const TokenSymbol* Syntax::lexer_accepting_state(State current_state) const {
-	return _lexer_accepting_state[current_state] == Lexer_unaccepting_state ? nullptr : &_symbol_table[_lexer_accepting_state[current_state]];
+const TokenSymbol* Syntax::lexer_accepting_state(State current_state, State parser_state) const {
+	unsigned int assoc = _lexer_accepting_state_assoc_table[current_state];
+	std::cout << "(" << current_state << ", " << parser_state << ") = " << assoc << std::endl;
+	if(assoc == Lexer_unaccepting_state)
+		return nullptr;
+	else
+		return _lexer_accepting_state_table[assoc*_parser_state_number+parser_state] == Lexer_unaccepting_state ? nullptr : &_symbol_table[_lexer_accepting_state_table[assoc*_parser_state_number+parser_state]];
 }
 
 void Syntax::set_lexer_table(unsigned int state_number) {
 	_lexer_table = new State[Direct_letter_range*state_number];
-	_lexer_accepting_state = new Index[state_number];
 	_lexer_state_number = state_number;
+	_lexer_accepting_state_assoc_table = new Index[state_number];
 }
 
 Syntax::State* Syntax::lexer_table() {
@@ -206,14 +224,6 @@ Syntax::State* Syntax::lexer_table() {
 
 const Syntax::State* Syntax::lexer_table() const {
 	return _lexer_table;
-}
-
-Syntax::Index* Syntax::lexer_accepting_state() {
-	return _lexer_accepting_state;
-}
-
-const Syntax::Index* Syntax::lexer_accepting_state() const {
-	return _lexer_accepting_state;
 }
 
 //
@@ -247,6 +257,11 @@ void Syntax::set_parser_table(unsigned int state_number, unsigned int dummy_rule
 	_parser_dummy_rule_number = dummy_rule_number;
 }
 
+void Syntax::set_lexer_parser_table(unsigned int lexer_accepting_state_number, unsigned int parser_state_number) {
+	_lexer_accepting_state_table = new Index[lexer_accepting_state_number*parser_state_number];
+	_lexer_accepting_state_number = lexer_accepting_state_number;
+}
+
 Syntax::Index* Syntax::parser_action_table() {
 	return _action_table;
 }
@@ -269,4 +284,24 @@ Syntax::Index* Syntax::parser_reduce_number() {
 
 const Syntax::Index* Syntax::parser_reduce_number() const {
 	return _reduce_number;
+}
+
+//
+//	Mixed
+//
+
+Syntax::Index* Syntax::lexer_accepting_state_table() {
+	return _lexer_accepting_state_table;
+}
+
+const Syntax::Index* Syntax::lexer_accepting_state_table() const {
+	return _lexer_accepting_state_table;
+}
+
+Syntax::Index* Syntax::lexer_accepting_state_assoc_table() {
+	return _lexer_accepting_state_assoc_table;
+}
+
+const Syntax::Index* Syntax::lexer_accepting_state_assoc_table() const {
+	return _lexer_accepting_state_assoc_table;
 }
