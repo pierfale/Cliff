@@ -55,11 +55,11 @@ const std::vector<AbstractSyntaxTree*>& AbstractSyntaxTree::children() const {
 	return _children;
 }
 
-void AbstractSyntaxTree::print(std::ostream& stream) {
+void AbstractSyntaxTree::print(std::ostream& stream) const {
 	_print(stream, 0);
 }
 
-void AbstractSyntaxTree::_print(std::ostream& stream, unsigned int depth) {
+void AbstractSyntaxTree::_print(std::ostream& stream, unsigned int depth) const {
 	std::string s(depth, ' ');
 
 	if(is_leaf()) {

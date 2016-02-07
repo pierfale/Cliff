@@ -6,6 +6,7 @@
 #include "cliff/shared/TreeTransformer.h"
 #include "cliff/front_end/Syntax.h"
 #include "cliff/shared/Exception.h"
+#include "cliff/tool/syntax_generator/RegularExpressionRepresentation.h"
 
 namespace cliff {
 
@@ -18,7 +19,7 @@ namespace cliff {
 			ListReduce = 0x4
 		};
 
-		class RuleDefinition {
+		class RawSubRule {
 
 		public:
 			enum Type {
@@ -33,31 +34,46 @@ namespace cliff {
 
 
 
-			RuleDefinition(Type type, unsigned int flags = 0);
-			RuleDefinition(Type type, const TokenSymbol* symbol, unsigned int flags = 0);
-			RuleDefinition(const RuleDefinition& that);
-			RuleDefinition(RuleDefinition&& that);
+			RawSubRule(Type type, unsigned int flags = 0);
+			RawSubRule(Type type, const TokenSymbol* symbol, unsigned int flags = 0);
+			RawSubRule(const RawSubRule& that);
+			RawSubRule(RawSubRule&& that);
 
-			RuleDefinition& add_child(Type type, unsigned int flags = 0);
-			RuleDefinition& add_child(Type type, const TokenSymbol* symbol, unsigned int flags = 0);
-			RuleDefinition& add_child(const RuleDefinition& that);
+			RawSubRule& add_child(Type type, unsigned int flags = 0);
+			RawSubRule& add_child(Type type, const TokenSymbol* symbol, unsigned int flags = 0);
+			RawSubRule& add_child(const RawSubRule& that);
 
 
 
 			Type type() const;
 			unsigned int flags() const;
 			const TokenSymbol& content() const;
-			std::vector<RuleDefinition>& list();
-			const std::vector<RuleDefinition>& list() const;
+			std::vector<RawSubRule>& list();
+			const std::vector<RawSubRule>& list() const;
 
 		private:
 			Type _type;
 			unsigned int _flags;
 			const TokenSymbol* _symbol;
-			std::vector<RuleDefinition> _rule_list;
+			std::vector<RawSubRule> _rule_list;
 		};
 
-		typedef std::map<const TokenSymbol*, RuleDefinition> RawRuleList;
+		class RawRule {
+
+		public:
+			RawRule(RawSubRule::Type root_type, unsigned int flags = 0);
+			RawRule(RawSubRule::Type root_type, const TokenSymbol* symbol, unsigned int flags = 0);
+
+			RawSubRule& root();
+			const RawSubRule& root() const;
+
+		private:
+			RawSubRule _root;
+			RawSubRule _ignore_sequences;
+
+		};
+
+		typedef std::map<const TokenSymbol*, RawRule> RawRuleList;
 
 		class Symbol {
 
@@ -129,20 +145,23 @@ namespace cliff {
 		bool is_dummy_symbol_value(const TokenSymbol& symbol) const;
 		const std::vector<TokenSymbol>& dummy_rule_name() const;
 
+		std::map<const TokenSymbol*, RegularExpressionRepresentation>& regular_expression_list();
+		const std::map<const TokenSymbol*, RegularExpressionRepresentation>& regular_expression_list() const;
+
 		void print(std::ostream& stream) const;
 
 	private:
 		void construct_dummy_symbol(const Syntax& ebnf_syntax, const Syntax& generated_syntax, const AbstractSyntaxTree& current_node);
 		void fill_regular_expression(const Syntax& ebnf_syntax, const Syntax& generated_syntax, const AbstractSyntaxTree& current_node);
 		void construct(const Syntax& ebnf_syntax, const Syntax& generated_syntax, const AbstractSyntaxTree& current_node, RawRuleList& rule_list);
-		void construct_rule(const Syntax& ebnf_syntax, const Syntax& generated_syntax, RawRuleList& rule_list, const AbstractSyntaxTree& current_node, RuleDefinition& current_rule, const TokenSymbol& current_rule_name);
+		void construct_rule(const Syntax& ebnf_syntax, const Syntax& generated_syntax, RawRuleList& rule_list, const AbstractSyntaxTree& current_node, RawSubRule& current_rule, const TokenSymbol& current_rule_name);
 		void inline_rule(const Syntax& ebnf_syntax, const Syntax& generated_syntax, const RawRuleList& rule_list);
-		void inline_rule_definition(const Syntax& ebnf_syntax, const Syntax& generated_syntax, const RuleDefinition& current_input_rule, std::vector<std::pair<std::vector<Symbol>, unsigned int>>& alternative_list);
+		void inline_rule_definition(const Syntax& ebnf_syntax, const Syntax& generated_syntax, const RawSubRule& current_input_rule, std::vector<std::pair<std::vector<Symbol>, unsigned int>>& alternative_list);
 
 		const TokenSymbol* _entry_rule;
 		std::map<const TokenSymbol*, Rule> _rule_list;
+		std::map<const TokenSymbol*, RegularExpressionRepresentation> _regular_expression_list;
 		std::vector<TokenSymbol> _dummy_rule_name;
-		std::vector<const TokenSymbol*> _regular_expression_names;
 		unsigned int _dummy_rule_cursor;
 
 	};

@@ -74,7 +74,6 @@ AbstractSyntaxTree& Parser::execute(MemoryContainer<AbstractSyntaxTree>& tree_me
 		}
 		else if(next_action & Syntax::Parser_action_shift_mask) {
 			if(next_action & Syntax::Parser_action_replace_state_mask) {
-				std::cout << "shit/replace" << std::endl;
 				AbstractSyntaxTree* current_tree = tree_stack.top();
 				tree_stack.pop();
 				state_stack.pop();

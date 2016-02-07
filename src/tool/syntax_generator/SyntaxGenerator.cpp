@@ -31,7 +31,9 @@ void SyntaxGenerator::execute(ProgramOption::Iterator option_caller) {
 	//	TMP
 	//
 
-	std::vector<const char*> symbols_name = {	"unamed_terminal", "rule_list", "rule", "rule_name", "rule_alternative", "rule_sequence", "rule_optional", "rule_repetition",
+	std::vector<const char*> symbols_name = {	"token_global_statement", "token_keyword_global",
+
+												"unamed_terminal", "rule_list", "rule", "rule_name", "rule_alternative", "rule_sequence", "rule_optional", "rule_repetition",
 												"rule_terminal", "rule_non_terminal",
 
 												//Regular expression
@@ -40,6 +42,9 @@ void SyntaxGenerator::execute(ProgramOption::Iterator option_caller) {
 												"regular_expression_range", "regular_expression_range_block"};
 
 	syntax.set_symbol_table(symbols_name, 0);
+
+	const TokenSymbol& token_global_statement = syntax.get_symbol_from_name("token_global_statement");
+	const TokenSymbol& token_keyword_global = syntax.get_symbol_from_name("token_keyword_global");
 
 	const TokenSymbol& token_symbol_unamed_terminal = syntax.get_symbol_from_name("unamed_terminal");
 	const TokenSymbol& token_symbol_rule_list = syntax.get_symbol_from_name("rule_list");
@@ -167,6 +172,13 @@ void SyntaxGenerator::execute(ProgramOption::Iterator option_caller) {
 
 	AbstractSyntaxTree rule_list_node(tree_memory,token_symbol_rule_list);
 
+	// global ignore = " " "\n"
+	/*AbstractSyntaxTree& global_node = rule_list_node.add_child(token_global_statement);
+	global_node.add_child(Token(token_keyword_global));
+	global_node.add_child(Token(token_symbol_rule_terminal, " "));
+	global_node.add_child(Token(token_symbol_rule_terminal, "\n"));*/
+
+	// local ignore = none
 	// regular_expression := "#" regular_expression_block* "#"
 	AbstractSyntaxTree& rule_1_node = rule_list_node.add_child(token_symbol_rule);
 	rule_1_node.add_child(Token(token_symbol_rule_name, "regular_expression"));
@@ -270,6 +282,8 @@ void SyntaxGenerator::execute(ProgramOption::Iterator option_caller) {
 	AbstractSyntaxTree& rule_9_re_1_7 = rule_9_re_1.add_child(token_symbol_regular_expression_range_block);
 	rule_9_re_1_7.add_child(Token(token_symbol_rule_terminal, "-")); // wut ?
 	rule_9_re_1.add_child(Token(token_symbol_unamed_terminal, "]"));
+
+
 /*
 	rule_9_re.add_child(Token(token_symbol_regular_expression_letter, "a"));
 	AbstractSyntaxTree& rule_9_re_1 = rule_9_re.add_child(token_symbol_regular_expression_repetition);
@@ -388,7 +402,7 @@ void SyntaxGenerator::create_syntax(const Syntax& ebnf_syntax, const AbstractSyn
 	std::cout << "   Lexer   " << std::endl;
 	std::cout << "===========" << std::endl;
 	std::map<const TokenSymbol*, std::vector<unsigned int>> accepting_states;
-	LexerGenerator::generate_lexer(ebnf_syntax, ast, generated_syntax, accepting_states);
+	LexerGenerator::generate_lexer(ebnf_syntax, ast, generated_syntax, syntax_representation, accepting_states);
 
 	std::cout << "===========" << std::endl;
 	std::cout << "   Parser  " << std::endl;

@@ -4,22 +4,23 @@
 #include <stack>
 
 #include "cliff/front_end/Syntax.h"
+#include "cliff/tool/syntax_generator/SyntaxRepresentation.h"
 #include "cliff/shared/AbstractSyntaxTree.h"
 #include "cliff/shared/Automata.h"
 #include "cliff/shared/MemoryContainer.h"
+
 
 namespace cliff {
 
 	class LexerGenerator {
 
 	public:
-		static void generate_lexer(const Syntax& ebnf_syntax, const AbstractSyntaxTree& syntax_tree, Syntax& output_syntax, std::map<const TokenSymbol*, std::vector<unsigned int>>& accepting_state);
+		static void generate_lexer(const Syntax& ebnf_syntax, const AbstractSyntaxTree& syntax_tree, Syntax& output_syntax, SyntaxRepresentation& syntax_representation, std::map<const TokenSymbol*, std::vector<unsigned int>>& accepting_state);
 
 	private:
 		LexerGenerator() = delete;
 
 		static void get_terminal_content(const Syntax& ebnf_syntax, const AbstractSyntaxTree& syntax_tree, std::vector<const char*>& symbols_content);
-		static NonDeterministeFiniteAutomataNode& create_regular_expression_nfa(const Syntax& ebnf_syntax, const AbstractSyntaxTree& current_tree_node, NonDeterministeFiniteAutomataNode& start_automata_node, Syntax& output_syntax);
 		static void create_dfa(const Syntax& ebnf_syntax, const NonDeterministeFiniteAutomataNode& start_nfa_node, DeterministeFiniteAutomataNode& start_dfa_node);
 		static bool epsilon_closure(const NonDeterministeFiniteAutomataNode& nfa_node, std::vector<const NonDeterministeFiniteAutomataNode*>& output_list, LetterRange range);
 		static void reduce_dfa(const Syntax& ebnf_syntax, DeterministeFiniteAutomataNode& start_node);

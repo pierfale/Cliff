@@ -2,11 +2,11 @@
 
 using namespace cliff;
 
-void LexerGenerator::generate_lexer(const Syntax& ebnf_syntax, const AbstractSyntaxTree& syntax_tree, Syntax& output_syntax, std::map<const TokenSymbol*, std::vector<unsigned int>>& accepting_states) {
+void LexerGenerator::generate_lexer(const Syntax& ebnf_syntax, const AbstractSyntaxTree& syntax_tree, Syntax& output_syntax, SyntaxRepresentation& syntax_representation, std::map<const TokenSymbol*, std::vector<unsigned int>>& accepting_states) {
 	MemoryContainer<NonDeterministeFiniteAutomataNode> nfa_memory;
 	NonDeterministeFiniteAutomataNode nfa_start_node(nfa_memory);
-	create_regular_expression_nfa(ebnf_syntax, syntax_tree, nfa_start_node,  output_syntax);
 
+	// Terminal literal string
 	std::vector<const char*> symbols_content;
 	get_terminal_content(ebnf_syntax, syntax_tree, symbols_content);
 	for(const char* content : symbols_content) {
@@ -18,6 +18,18 @@ void LexerGenerator::generate_lexer(const Syntax& ebnf_syntax, const AbstractSyn
 		current_node->add_accepting_state(symbol);
 
 	}
+
+	// Regular expression
+	for(auto& regular_expression : syntax_representation.regular_expression_list()) {
+		nfa_start_node.create_output_transition_with(regular_expression.second.start_node(), LetterRange::Epsilon_range);
+	}
+
+	// Ignore sequence
+
+	/*
+	for(const std::pair<const TokenSymbol*, RegularExpressionRepresentation>& regular_expression : syntax_representation.regular_expression_list()) {
+
+	}*/
 
 
 	std::cout << "Non Derterministe Finite Automata : " << std::endl;
@@ -38,84 +50,19 @@ void LexerGenerator::generate_lexer(const Syntax& ebnf_syntax, const AbstractSyn
 	std::cout << std::endl;
 
 	generate_lexer(output_syntax, dfa_start_node, accepting_states);
-
-	// fill accepting states
 }
 
 void LexerGenerator::get_terminal_content(const Syntax& ebnf_syntax, const AbstractSyntaxTree& syntax_tree, std::vector<const char*>& symbols_content) {
-	if(syntax_tree.type() == ebnf_syntax.get_symbol_from_name("rule_terminal")) {
+	if(syntax_tree.type() == ebnf_syntax.get_symbol_from_name("rule_terminal")) { // TODO use syntax_representation
+		if(syntax_tree.content() == nullptr) {
+			syntax_tree.print(std::cout);
+		}
+
 		symbols_content.emplace_back(syntax_tree.content());
 	}
 	else {
 		for(const AbstractSyntaxTree* child : syntax_tree.children())
 			get_terminal_content(ebnf_syntax, *child, symbols_content);
-	}
-}
-
-NonDeterministeFiniteAutomataNode& LexerGenerator::create_regular_expression_nfa(const Syntax& ebnf_syntax, const AbstractSyntaxTree& current_tree_node, NonDeterministeFiniteAutomataNode& start_automata_node, Syntax& output_syntax) {
-	if(current_tree_node.type() == ebnf_syntax.get_symbol_from_name("rule") && current_tree_node.children()[2]->type() == ebnf_syntax.get_symbol_from_name("regular_expression")) {
-		NonDeterministeFiniteAutomataNode& last_node = create_regular_expression_nfa(ebnf_syntax, *current_tree_node.children()[2], start_automata_node.create_output_node(LetterRange::Epsilon_range), output_syntax);
-		last_node.add_accepting_state(output_syntax.get_symbol_from_name(current_tree_node.children()[0]->content()));
-		return last_node;
-	}
-	else if(current_tree_node.type() == ebnf_syntax.get_symbol_from_name("regular_expression_letter")) {
-		/*NonDeterministeFiniteAutomataNode* current_automata_node = &start_automata_node;
-		for(const AbstractSyntaxTree* node : current_tree_node.children()) { // WHAT ?
-			if(node->type() == ebnf_syntax.get_symbol_from_name("regular_expression_letter"))
-				current_automata_node = &current_automata_node->create_output_node(LetterRange(node->content()[0]));
-			else if(node->type() == ebnf_syntax.get_symbol_from_name("regular_expression_letter_all"))
-				current_automata_node = &current_automata_node->create_output_node(LetterRange(LetterRange::Min_letter, LetterRange::Max_letter));
-		}*/
-		return start_automata_node.create_output_node(LetterRange(current_tree_node.content()[0]));
-
-	}
-	else if(current_tree_node.type() == ebnf_syntax.get_symbol_from_name("regular_expression_range")) {
-		if(std::strcmp(current_tree_node.children()[0]->content(), "[") == 0) {
-
-		}
-		else if(std::strcmp(current_tree_node.children()[0]->content(), "[^") == 0) {
-			LetterRange range(LetterRange::Min_letter, LetterRange::Max_letter);
-			for(auto it_child = std::begin(current_tree_node.children())+1; it_child != std::end(current_tree_node.children())-1; ++it_child) {
-				if((*it_child)->children().size() == 1)
-					range -= LetterRange((*it_child)->children()[0]->content()[0]);
-				else if((*it_child)->children().size() == 3)
-					range -= LetterRange((*it_child)->children()[0]->content()[0], (*it_child)->children()[2]->content()[0]);
-			}
-
-			return start_automata_node.create_output_node(range);
-		}
-	}
-	else if(current_tree_node.type() == ebnf_syntax.get_symbol_from_name("regular_expression_alternative")) {
-		NonDeterministeFiniteAutomataNode& last_node = start_automata_node.create_node();
-		for(const AbstractSyntaxTree* node : current_tree_node.children()) {
-			NonDeterministeFiniteAutomataNode& last_alt_node = create_regular_expression_nfa(ebnf_syntax, *node, start_automata_node.create_output_node(LetterRange::Epsilon_range), output_syntax);
-			 last_alt_node.create_output_transition_with(last_node, LetterRange::Epsilon_range);
-		}
-		return last_node;
-	}
-	else if(current_tree_node.type() == ebnf_syntax.get_symbol_from_name("regular_expression_repetition")) {
-		NonDeterministeFiniteAutomataNode& start_automata_node_inner = start_automata_node.create_output_node(LetterRange::Epsilon_range);
-
-		NonDeterministeFiniteAutomataNode& end_automata_node_inner = create_regular_expression_nfa(ebnf_syntax, *(current_tree_node.children()[0]), start_automata_node_inner, output_syntax);
-		NonDeterministeFiniteAutomataNode& last_node = end_automata_node_inner.create_output_node(LetterRange::Epsilon_range);
-
-		start_automata_node.create_output_transition_with(last_node, LetterRange::Epsilon_range);
-		end_automata_node_inner.create_output_transition_with(start_automata_node_inner, LetterRange::Epsilon_range);
-		return last_node;
-	}
-	else if(current_tree_node.type() == ebnf_syntax.get_symbol_from_name("regular_expression")) {
-		NonDeterministeFiniteAutomataNode* current_start_automata_node = &start_automata_node;
-		for(auto it_node = std::begin(current_tree_node.children()); it_node != std::end(current_tree_node.children()); ++it_node) {
-			NonDeterministeFiniteAutomataNode& current_end_automata_node = create_regular_expression_nfa(ebnf_syntax, **it_node, *current_start_automata_node, output_syntax);
-			current_start_automata_node = &current_end_automata_node;
-		}
-		return *current_start_automata_node;
-	}
-	else {
-		for(const AbstractSyntaxTree* node : current_tree_node.children()) {
-			create_regular_expression_nfa(ebnf_syntax, *node, start_automata_node, output_syntax);
-		}
-		return *((NonDeterministeFiniteAutomataNode*)nullptr);
 	}
 }
 
@@ -417,27 +364,9 @@ void LexerGenerator::generate_lexer(Syntax& output_syntax, const DeterministeFin
 				output_syntax.lexer_table()[state_index*Syntax::Direct_letter_range+letter] = std::distance(std::begin(node_list), std::find(std::begin(node_list), std::end(node_list), transition.second));
 			}
 
-			if(transition.first < Syntax::Direct_letter_range) {
-				// TODO for all range
-				//output_syntax.lexer_table()[state_index*Syntax::Direct_letter_range+transition.first] = std::find(std::begin(node_list), std::end(node_list), transition.second)-std::begin(node_list);
-			}
-			else {
-				// TODO UTF-8 character
-			}
-		}
+			//TODO UTF-8 character
 
-		// TODO if several accepting on same state, eval priority.
-		/*if(node_list[state_index]->accepting_state().size() > 1) {
-			std::cout << "multiple accepting state :";
-			for(auto s : node_list[state_index]->accepting_state())
-				std::cout << " " << s->string();
-			std::cout << std::endl;
 		}
-		else if(node_list[state_index]->accepting_state().size() == 1) {
-			output_syntax.lexer_accepting_state()[state_index] = output_syntax.index_of_symbol(*node_list[state_index]->accepting_state()[0]);
-		}
-		else
-			output_syntax.lexer_accepting_state()[state_index] = Syntax::Lexer_unaccepting_state;*/
 	}
 
 }

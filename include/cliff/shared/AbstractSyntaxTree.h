@@ -29,10 +29,10 @@ public:
 	const char* content() const;
 	const std::vector<AbstractSyntaxTree*>& children() const;
 
-	void print(std::ostream& stream);
+	void print(std::ostream& stream) const;
 
 private:
-	void _print(std::ostream& stream, unsigned int depth);
+	void _print(std::ostream& stream, unsigned int depth) const;
 
 	MemoryContainer<AbstractSyntaxTree>& _memory_container;
 	Token _token;

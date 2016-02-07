@@ -205,7 +205,6 @@ Syntax::State Syntax::next_lexer_state(State current_state, Letter current_lette
 
 const TokenSymbol* Syntax::lexer_accepting_state(State current_state, State parser_state) const {
 	unsigned int assoc = _lexer_accepting_state_assoc_table[current_state];
-	std::cout << "(" << current_state << ", " << parser_state << ") = " << assoc << std::endl;
 	if(assoc == Lexer_unaccepting_state)
 		return nullptr;
 	else

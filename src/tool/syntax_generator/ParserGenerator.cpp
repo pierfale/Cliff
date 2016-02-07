@@ -155,7 +155,7 @@ void ParserGenerator::generate_parser(const Syntax& ebnf_syntax, Syntax& output_
 							item.rule->sequence().size(),
 							exception::UserMessage(exception::UserMessage::Error, "Parser : reduce/reduce conflict"));
 
-					for(const std::pair<const TokenSymbol*, std::vector<unsigned int>>& accepting_state : accepting_states) { // todo inverse key/value
+					for(const std::pair<const TokenSymbol*, std::vector<unsigned int>>& accepting_state : accepting_states) {
 						if(*item.next_token == *accepting_state.first) {
 							for(unsigned int accepting_state_number : accepting_state.second) {
 								set_lexer_accepting_state_or_else(output_syntax, accepting_state_number*set_list.size()+set_index, std::distance(output_syntax.begin_terminal(), accepting_state.first),
@@ -173,7 +173,7 @@ void ParserGenerator::generate_parser(const Syntax& ebnf_syntax, Syntax& output_
 						exception::UserMessage(exception::UserMessage::Error, "Parser : shift/reduce conflict"));
 
 
-				for(const std::pair<const TokenSymbol*, std::vector<unsigned int>>& accepting_state : accepting_states) { // todo inverse key/value
+				for(const std::pair<const TokenSymbol*, std::vector<unsigned int>>& accepting_state : accepting_states) {
 					if(item.rule->sequence()[item.cursor].content() == *accepting_state.first) {
 						for(unsigned int accepting_state_number : accepting_state.second) {
 							set_lexer_accepting_state_or_else(output_syntax, accepting_state_number*set_list.size()+set_index, std::distance(output_syntax.begin_terminal(), accepting_state.first),

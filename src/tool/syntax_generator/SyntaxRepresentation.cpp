@@ -37,9 +37,18 @@ const std::vector<TokenSymbol>& SyntaxRepresentation::dummy_rule_name() const {
 	return _dummy_rule_name;
 }
 
+std::map<const TokenSymbol*, RegularExpressionRepresentation>& SyntaxRepresentation::regular_expression_list() {
+	return _regular_expression_list;
+}
+
+const std::map<const TokenSymbol*, RegularExpressionRepresentation>& SyntaxRepresentation::regular_expression_list() const {
+	return _regular_expression_list;
+}
+
+
 void SyntaxRepresentation::construct_dummy_symbol(const Syntax& ebnf_syntax, const Syntax& generated_syntax, const AbstractSyntaxTree& current_node) {
 	if(current_node.type() == ebnf_syntax.get_symbol_from_name("rule_repetition")) {
-		std::string rule_name = "rule_dummy_"+std::to_string(_dummy_rule_name.size()+1);
+		std::string rule_name = "%rule_dummy_"+std::to_string(_dummy_rule_name.size()+1);
 		_dummy_rule_name.emplace_back(rule_name.c_str());
 	}
 
@@ -49,8 +58,12 @@ void SyntaxRepresentation::construct_dummy_symbol(const Syntax& ebnf_syntax, con
 
 void SyntaxRepresentation::fill_regular_expression(const Syntax& ebnf_syntax, const Syntax& generated_syntax, const AbstractSyntaxTree& current_node) {
 	if(current_node.type() == ebnf_syntax.get_symbol_from_name("rule")) {
-		if(current_node.children()[2]->type() == ebnf_syntax.get_symbol_from_name("regular_expression"))
-			_regular_expression_names.emplace_back(&generated_syntax.get_symbol_from_name(current_node.children()[0]->content()));
+		if(current_node.children()[2]->type() == ebnf_syntax.get_symbol_from_name(SyntaxNodeName::RegularExpression)) {
+			const TokenSymbol& name = generated_syntax.get_symbol_from_name(current_node.children()[0]->content());
+			_regular_expression_list.emplace(std::piecewise_construct,
+											 std::forward_as_tuple(&name),
+											 std::forward_as_tuple(ebnf_syntax, *current_node.children()[2], name));
+		}
 	}
 	else {
 		for(const AbstractSyntaxTree* child : current_node.children())
@@ -66,7 +79,7 @@ void SyntaxRepresentation::construct(const Syntax& ebnf_syntax, const Syntax& ge
 
 			if(_entry_rule == nullptr) { //first rule
 				const TokenSymbol& root_symbol = generated_syntax.get_symbol_from_name(Syntax::Root_symbol);
-				rule_list.emplace(std::piecewise_construct, std::forward_as_tuple(&root_symbol), std::forward_as_tuple(RuleDefinition::NonTerminal, &rule_name));
+				rule_list.emplace(std::piecewise_construct, std::forward_as_tuple(&root_symbol), std::forward_as_tuple(RawSubRule::NonTerminal, &rule_name));
 				_entry_rule = &root_symbol;
 			}
 
@@ -75,9 +88,9 @@ void SyntaxRepresentation::construct(const Syntax& ebnf_syntax, const Syntax& ge
 				THROW(exception::UserMessage, exception::UserMessage::Error, "Rule "+std::string(rule_name.string())+" already declared"); //TODO add line number/file
 			}
 
-			auto it_rule = rule_list.emplace(std::piecewise_construct, std::forward_as_tuple(&rule_name), std::forward_as_tuple(RuleDefinition::Alternative)).first;
+			auto it_rule = rule_list.emplace(std::piecewise_construct, std::forward_as_tuple(&rule_name), std::forward_as_tuple(RawSubRule::Alternative)).first;
 			for(const AbstractSyntaxTree* child : current_node.children()[2]->children())
-				construct_rule(ebnf_syntax, generated_syntax, rule_list, *child,  it_rule->second, rule_name);
+				construct_rule(ebnf_syntax, generated_syntax, rule_list, *child,  it_rule->second.root(), rule_name);
 		}
 	}
 	else {
@@ -86,47 +99,47 @@ void SyntaxRepresentation::construct(const Syntax& ebnf_syntax, const Syntax& ge
 	}
 }
 
-void SyntaxRepresentation::construct_rule(const Syntax& ebnf_syntax, const Syntax& generated_syntax, RawRuleList& rule_list, const AbstractSyntaxTree& current_node, RuleDefinition& current_rule, const TokenSymbol& current_rule_name) {
+void SyntaxRepresentation::construct_rule(const Syntax& ebnf_syntax, const Syntax& generated_syntax, RawRuleList& rule_list, const AbstractSyntaxTree& current_node, RawSubRule& current_rule, const TokenSymbol& current_rule_name) {
 	if(current_node.type() == ebnf_syntax.get_symbol_from_name("rule_alternative")) {
-		RuleDefinition& new_child = current_rule.add_child(RuleDefinition::Alternative);
+		RawSubRule& new_child = current_rule.add_child(RawSubRule::Alternative);
 		for(const AbstractSyntaxTree* child : current_node.children())
 			construct_rule(ebnf_syntax, generated_syntax, rule_list, *child, new_child, current_rule_name);
 	}
 	else if(current_node.type() == ebnf_syntax.get_symbol_from_name("rule_optional")) {
-		RuleDefinition& new_child = current_rule.add_child(RuleDefinition::OptionalSequence);
+		RawSubRule& new_child = current_rule.add_child(RawSubRule::OptionalSequence);
 		for(const AbstractSyntaxTree* child : current_node.children())
 			construct_rule(ebnf_syntax, generated_syntax, rule_list, *child, new_child, current_rule_name);
 	}
 	else if(current_node.type() == ebnf_syntax.get_symbol_from_name("rule_sequence")) {
-		RuleDefinition& new_child = current_rule.add_child(RuleDefinition::Sequence);
+		RawSubRule& new_child = current_rule.add_child(RawSubRule::Sequence);
 		for(const AbstractSyntaxTree* child : current_node.children())
 			construct_rule(ebnf_syntax, generated_syntax, rule_list, *child, new_child, current_rule_name);
 	}
 	else if(current_node.type() == ebnf_syntax.get_symbol_from_name("rule_repetition")) {
 		const TokenSymbol& temporary_rule_symbol = _dummy_rule_name[_dummy_rule_cursor++];
-		auto rule_it = rule_list.emplace(std::piecewise_construct, std::forward_as_tuple(&temporary_rule_symbol), std::forward_as_tuple(RuleDefinition::Alternative)).first;
-		RuleDefinition& element = rule_it->second.add_child(RuleDefinition::Sequence, ListHead);
+		auto rule_it = rule_list.emplace(std::piecewise_construct, std::forward_as_tuple(&temporary_rule_symbol), std::forward_as_tuple(RawSubRule::Alternative)).first;
+		RawSubRule& element = rule_it->second.root().add_child(RawSubRule::Sequence, ListHead);
 		for(const AbstractSyntaxTree* child : current_node.children())
 			construct_rule(ebnf_syntax, generated_syntax, rule_list, *child, element, current_rule_name);
 
-		RuleDefinition& element2 = rule_it->second.add_child(RuleDefinition::Sequence, ListTail);
-		element2.add_child(RuleDefinition::NonTerminal, &temporary_rule_symbol);
+		RawSubRule& element2 = rule_it->second.root().add_child(RawSubRule::Sequence, ListTail);
+		element2.add_child(RawSubRule::NonTerminal, &temporary_rule_symbol);
 
-		RuleDefinition& first_element = rule_it->second.list().front();
+		RawSubRule& first_element = rule_it->second.root().list().front();
 
 		std::copy(std::begin(first_element.list()), std::end(first_element.list()), std::back_inserter(element2.list()));
 
-		current_rule.add_child(RuleDefinition::NonTerminal, &temporary_rule_symbol, ListReduce);
+		current_rule.add_child(RawSubRule::NonTerminal, &temporary_rule_symbol, ListReduce);
 	}
 	else if(current_node.type() == ebnf_syntax.get_symbol_from_name("rule_non_terminal")) {
 		const TokenSymbol& symbol = generated_syntax.get_symbol_from_name(current_node.content());
-		current_rule.add_child(std::find(std::begin(_regular_expression_names), std::end(_regular_expression_names), &symbol) == std::end(_regular_expression_names) ?
-								   RuleDefinition::NonTerminal : RuleDefinition::Terminal, &symbol);
+		current_rule.add_child(_regular_expression_list.find(&symbol) == std::end(_regular_expression_list) ?
+								   RawSubRule::NonTerminal : RawSubRule::Terminal, &symbol);
 
 
 	}
 	else if(current_node.type() == ebnf_syntax.get_symbol_from_name("rule_terminal")) {
-		current_rule.add_child(RuleDefinition::Terminal, &generated_syntax.get_symbol_from_name(current_node.content()));
+		current_rule.add_child(RawSubRule::Terminal, &generated_syntax.get_symbol_from_name(current_node.content()));
 	}
 }
 
@@ -136,13 +149,13 @@ void SyntaxRepresentation::inline_rule(const Syntax& ebnf_syntax, const Syntax& 
 		auto it_rule = _rule_list.find(rule.first);
 		std::vector<std::pair<std::vector<Symbol>, unsigned int>> rule_all_alternative;
 		rule_all_alternative.emplace_back(); // start rule
-		inline_rule_definition(ebnf_syntax, generated_syntax, rule.second, rule_all_alternative);
+		inline_rule_definition(ebnf_syntax, generated_syntax, rule.second.root(), rule_all_alternative);
 		for(const std::pair<std::vector<Symbol>, unsigned int>& alternative : rule_all_alternative)
 			it_rule->second.add_alternative(alternative.first, alternative.second);
 	}
 }
 
-void SyntaxRepresentation::inline_rule_definition(const Syntax& ebnf_syntax, const Syntax& generated_syntax, const RuleDefinition& current_input_rule, std::vector<std::pair<std::vector<Symbol>, unsigned int>>& alternative_list) {
+void SyntaxRepresentation::inline_rule_definition(const Syntax& ebnf_syntax, const Syntax& generated_syntax, const RawSubRule& current_input_rule, std::vector<std::pair<std::vector<Symbol>, unsigned int>>& alternative_list) {
 
 	for(std::pair<std::vector<Symbol>, unsigned int>& alternative : alternative_list) {
 		alternative.second |= current_input_rule.flags();
@@ -150,31 +163,31 @@ void SyntaxRepresentation::inline_rule_definition(const Syntax& ebnf_syntax, con
 
 	switch(current_input_rule.type()) {
 
-	case RuleDefinition::Terminal:
-	case RuleDefinition::NonTerminal:
+	case RawSubRule::Terminal:
+	case RawSubRule::NonTerminal:
 		for(std::pair<std::vector<Symbol>, unsigned int>& alternative : alternative_list)
-			alternative.first.emplace_back(current_input_rule.content(), current_input_rule.type() == RuleDefinition::Terminal);
+			alternative.first.emplace_back(current_input_rule.content(), current_input_rule.type() == RawSubRule::Terminal);
 		break;
-	case RuleDefinition::OptionalSequence:
+	case RawSubRule::OptionalSequence:
 		{
 			std::vector<std::pair<std::vector<Symbol>, unsigned int>> alternative_list_save(alternative_list);
-			for(const RuleDefinition& child : current_input_rule.list())
+			for(const RawSubRule& child : current_input_rule.list())
 				inline_rule_definition(ebnf_syntax, generated_syntax, child, alternative_list);
 			std::copy(std::begin(alternative_list_save), std::end(alternative_list_save), std::back_inserter(alternative_list));
 			break;
 		}
-	case RuleDefinition::RepetitionSequence:
-	case RuleDefinition::RepetitionNotEmptySequence:
-	case RuleDefinition::Sequence:
-		for(const RuleDefinition& child : current_input_rule.list())
+	case RawSubRule::RepetitionSequence:
+	case RawSubRule::RepetitionNotEmptySequence:
+	case RawSubRule::Sequence:
+		for(const RawSubRule& child : current_input_rule.list())
 			inline_rule_definition(ebnf_syntax, generated_syntax, child, alternative_list);
 		break;
-	case RuleDefinition::Alternative:
+	case RawSubRule::Alternative:
 		{
 			std::vector<std::pair<std::vector<Symbol>, unsigned int>> alternative_list_save;
 			std::swap(alternative_list, alternative_list_save);
 
-			for(const RuleDefinition& child : current_input_rule.list()) {
+			for(const RawSubRule& child : current_input_rule.list()) {
 				std::vector<std::pair<std::vector<Symbol>, unsigned int>> current_alternative_list(alternative_list_save);
 				inline_rule_definition(ebnf_syntax, generated_syntax, child, current_alternative_list);
 				std::copy(std::begin(current_alternative_list), std::end(current_alternative_list), std::back_inserter(alternative_list));
@@ -199,54 +212,76 @@ void SyntaxRepresentation::print(std::ostream& stream) const {
 //	RuleDefinition
 //
 
-SyntaxRepresentation::RuleDefinition::RuleDefinition(Type type, unsigned int flags) : _type(type), _flags(flags), _symbol(nullptr) {
+SyntaxRepresentation::RawSubRule::RawSubRule(Type type, unsigned int flags) : _type(type), _flags(flags), _symbol(nullptr) {
 
 }
 
-SyntaxRepresentation::RuleDefinition::RuleDefinition(Type type, const TokenSymbol* symbol, unsigned int flags) : _type(type), _flags(flags), _symbol(symbol) {
+SyntaxRepresentation::RawSubRule::RawSubRule(Type type, const TokenSymbol* symbol, unsigned int flags) : _type(type), _flags(flags), _symbol(symbol) {
 
 }
 
-SyntaxRepresentation::RuleDefinition::RuleDefinition(const RuleDefinition& that) : _type(that._type), _flags(that._flags), _symbol(that._symbol), _rule_list(that._rule_list) {
+SyntaxRepresentation::RawSubRule::RawSubRule(const RawSubRule& that) : _type(that._type), _flags(that._flags), _symbol(that._symbol), _rule_list(that._rule_list) {
 
 }
 
-SyntaxRepresentation::RuleDefinition::RuleDefinition(RuleDefinition&& that) : _type(that._type), _flags(that._flags), _symbol(that._symbol), _rule_list(std::move(that._rule_list)){
+SyntaxRepresentation::RawSubRule::RawSubRule(RawSubRule&& that) : _type(that._type), _flags(that._flags), _symbol(that._symbol), _rule_list(std::move(that._rule_list)){
 	that._symbol = nullptr;
 }
 
-SyntaxRepresentation::RuleDefinition& SyntaxRepresentation::RuleDefinition::add_child(Type type, unsigned int flags) {
+SyntaxRepresentation::RawSubRule& SyntaxRepresentation::RawSubRule::add_child(Type type, unsigned int flags) {
 	_rule_list.emplace_back(type, flags);
 	return _rule_list.back();
 }
 
-SyntaxRepresentation::RuleDefinition& SyntaxRepresentation::RuleDefinition::add_child(Type type, const TokenSymbol* symbol, unsigned int flags) {
+SyntaxRepresentation::RawSubRule& SyntaxRepresentation::RawSubRule::add_child(Type type, const TokenSymbol* symbol, unsigned int flags) {
 	_rule_list.emplace_back(type, symbol, flags);
 	return _rule_list.back();
 }
 
-SyntaxRepresentation::RuleDefinition& SyntaxRepresentation::RuleDefinition::add_child(const RuleDefinition& that) {
+SyntaxRepresentation::RawSubRule& SyntaxRepresentation::RawSubRule::add_child(const RawSubRule& that) {
 	_rule_list.emplace_back(that);
 	return _rule_list.back();
 }
 
-unsigned int SyntaxRepresentation::RuleDefinition::flags() const {
+unsigned int SyntaxRepresentation::RawSubRule::flags() const {
 	return _flags;
 }
 
-SyntaxRepresentation::RuleDefinition::Type SyntaxRepresentation::RuleDefinition::type() const {
+SyntaxRepresentation::RawSubRule::Type SyntaxRepresentation::RawSubRule::type() const {
 	return _type;
 }
-const TokenSymbol& SyntaxRepresentation::RuleDefinition::content() const {
+const TokenSymbol& SyntaxRepresentation::RawSubRule::content() const {
 	return *_symbol;
 }
 
-std::vector<SyntaxRepresentation::RuleDefinition>& SyntaxRepresentation::RuleDefinition::list() {
+std::vector<SyntaxRepresentation::RawSubRule>& SyntaxRepresentation::RawSubRule::list() {
 	return _rule_list;
 }
 
-const std::vector<SyntaxRepresentation::RuleDefinition>& SyntaxRepresentation::RuleDefinition::list() const {
+const std::vector<SyntaxRepresentation::RawSubRule>& SyntaxRepresentation::RawSubRule::list() const {
 	return _rule_list;
+}
+
+//
+//	RawRule
+//
+
+SyntaxRepresentation::RawRule::RawRule(RawSubRule::Type root_type, unsigned int flags)
+	: _root(root_type, flags), _ignore_sequences(RawSubRule::Alternative) {
+
+}
+
+SyntaxRepresentation::RawRule::RawRule(RawSubRule::Type root_type, const TokenSymbol* symbol, unsigned int flags)
+	: _root(root_type, symbol, flags), _ignore_sequences(RawSubRule::Alternative) {
+
+}
+
+SyntaxRepresentation::RawSubRule& SyntaxRepresentation::RawRule::root() {
+	return _root;
+}
+
+const SyntaxRepresentation::RawSubRule& SyntaxRepresentation::RawRule::root() const {
+	return _root;
 }
 
 //
