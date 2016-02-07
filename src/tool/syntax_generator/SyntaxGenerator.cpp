@@ -13,8 +13,8 @@ void SyntaxGenerator::execute(ProgramOption::Iterator option_caller) {
 
 	std::cout << "filename = " << filename << std::endl;
 
-	Syntax syntax;
-	syntax.load("syntax.bin");
+    Syntax syntax;
+   /* syntax.load("syntax.bin");
 	Reader reader(filename);
 	Lexer lexer(syntax, reader);
 	Parser parser(syntax, lexer);
@@ -26,7 +26,7 @@ void SyntaxGenerator::execute(ProgramOption::Iterator option_caller) {
 	std::cout << "Abstract Syntax Tree : " << std::endl;
 	root.print(std::cout);
 	std::cout << std::endl;
-
+*/
 	//
 	//	TMP
 	//

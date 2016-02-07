@@ -97,7 +97,7 @@ void LexerGenerator::create_dfa(const Syntax& ebnf_syntax, const NonDeterministe
 				auto exist_it = std::end(_state_correspondence);
 
 				for(auto computed_state_it = std::begin(_state_correspondence); computed_state_it != std::end(_state_correspondence); ++computed_state_it) {
-					if(std::is_permutation (std::begin(epsilon_closure_list), std::end(epsilon_closure_list), std::begin(computed_state_it->second))) {
+                    if(epsilon_closure_list.size() == computed_state_it->second.size() && std::is_permutation (std::begin(epsilon_closure_list), std::end(epsilon_closure_list), std::begin(computed_state_it->second))) {
 						exist_it = computed_state_it;
 						break;
 					}

@@ -110,7 +110,8 @@ LetterRange& LetterRange::operator-=(const LetterRange& that) {
 }
 
 bool LetterRange::operator==(const LetterRange& that) const {
-	return std::is_permutation(std::begin(_range), std::end(_range), std::begin(that._range), std::end(that._range), [](const std::pair<Letter, Letter>& range1, const std::pair<Letter, Letter>& range2){
+    return _range.size() == that._range.size() &&
+            std::is_permutation(std::begin(_range), std::end(_range), std::begin(that._range), [](const std::pair<Letter, Letter>& range1, const std::pair<Letter, Letter>& range2){
 		return range1.first == range2.first && range1.second == range2.second;
 	});
 }
