@@ -12,6 +12,9 @@ namespace cliff {
 
 	class Syntax {
 
+		//tmp
+		friend class SyntaxGenerator;
+
 	public:
 		typedef uint32_t State;
 		typedef uint32_t Index;
@@ -22,7 +25,11 @@ namespace cliff {
 
 		static const State Lexer_init_state = 0x0;
 		static const State Lexer_state_error = 0xFFFFFFFF;
+
 		static const Index Lexer_unaccepting_state = 0xFFFFFFFF;
+		static const Index Lexer_accepting_state_ignore = 0x80000000;
+		static const Index Lexer_accepting_state_content_mask = 0x7FFFFFF;
+
 		static const int Direct_letter_range = 128;
 
 		static const State Parser_init_state;
@@ -62,7 +69,7 @@ namespace cliff {
 		// Lexer
 		//
 		State next_lexer_state(State current_state, Letter current_letter) const;
-		const TokenSymbol* lexer_accepting_state(State current_state, State parser_state) const;
+		const TokenSymbol* lexer_accepting_state(State current_state, State parser_state, Index& flags) const;
 
 		void set_lexer_table(unsigned int state_number);
 		State* lexer_table();
@@ -105,8 +112,9 @@ namespace cliff {
 		//
 		struct StrCompare : public std::binary_function<const char*, const char*, bool> {
 		public:
-			bool operator() (const char* str1, const char* str2) const
-			{ return std::strcmp(str1, str2) < 0; }
+			bool operator() (const char* str1, const char* str2) const {
+				return std::strcmp(str1, str2) < 0;
+			}
 		};
 		std::map<const char*, unsigned int, StrCompare> _symbols_index;
 

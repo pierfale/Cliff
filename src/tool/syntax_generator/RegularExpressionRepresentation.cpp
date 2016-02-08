@@ -3,7 +3,7 @@
 using namespace cliff;
 
 RegularExpressionRepresentation::RegularExpressionRepresentation(const Syntax& ebnf_syntax, const AbstractSyntaxTree& syntax_tree, const TokenSymbol& symbol_name)
-	: _memory(), _start_node(_memory){
+	: _memory(), _start_node(_memory), _used(false) {
 
 	assert(syntax_tree.type() == ebnf_syntax.get_symbol_from_name(SyntaxNodeName::RegularExpression));
 
@@ -19,7 +19,15 @@ NonDeterministeFiniteAutomataNode& RegularExpressionRepresentation::construct(co
 	}
 	else if(current_tree_node.type() == ebnf_syntax.get_symbol_from_name(SyntaxNodeName::RegularExpressionRange)) {
 		if(std::strcmp(current_tree_node.children()[0]->content(), "[") == 0) { // TODO different between [ and ^]
+			LetterRange range;
+			for(auto it_child = std::begin(current_tree_node.children())+1; it_child != std::end(current_tree_node.children())-1; ++it_child) {
+				if((*it_child)->children().size() == 1)
+					range += LetterRange((*it_child)->children()[0]->content()[0]);
+				else if((*it_child)->children().size() == 3)
+					range += LetterRange((*it_child)->children()[0]->content()[0], (*it_child)->children()[2]->content()[0]);
+			}
 
+			return current_automata_node.create_output_node(range);
 		}
 		else if(std::strcmp(current_tree_node.children()[0]->content(), "[^") == 0) {
 			LetterRange range(LetterRange::Min_letter, LetterRange::Max_letter);
@@ -70,4 +78,12 @@ NonDeterministeFiniteAutomataNode& RegularExpressionRepresentation::start_node()
 
 const NonDeterministeFiniteAutomataNode& RegularExpressionRepresentation::start_node() const {
 	return _start_node;
+}
+
+bool RegularExpressionRepresentation::used() const {
+	return _used;
+}
+
+void RegularExpressionRepresentation::set_used() {
+	_used = true;
 }

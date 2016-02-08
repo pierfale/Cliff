@@ -14,7 +14,7 @@ void SyntaxGenerator::execute(ProgramOption::Iterator option_caller) {
 	std::cout << "filename = " << filename << std::endl;
 
     Syntax syntax;
-   /* syntax.load("syntax.bin");
+	syntax.load("syntax.bin");
 	Reader reader(filename);
 	Lexer lexer(syntax, reader);
 	Parser parser(syntax, lexer);
@@ -26,10 +26,12 @@ void SyntaxGenerator::execute(ProgramOption::Iterator option_caller) {
 	std::cout << "Abstract Syntax Tree : " << std::endl;
 	root.print(std::cout);
 	std::cout << std::endl;
-*/
+
 	//
 	//	TMP
 	//
+
+	syntax._symbols_index.clear();
 
 	std::vector<const char*> symbols_name = {	"token_global_statement", "token_keyword_global",
 
@@ -40,6 +42,8 @@ void SyntaxGenerator::execute(ProgramOption::Iterator option_caller) {
 												"regular_expression", "regular_expression_alternative", "regular_expression_repetition",
 												"regular_expression_letter_list", "regular_expression_letter", "regular_expression_letter_all",
 												"regular_expression_range", "regular_expression_range_block"};
+
+
 
 	syntax.set_symbol_table(symbols_name, 0);
 
@@ -172,13 +176,18 @@ void SyntaxGenerator::execute(ProgramOption::Iterator option_caller) {
 
 	AbstractSyntaxTree rule_list_node(tree_memory,token_symbol_rule_list);
 
-	// global ignore = " " "\n"
-	/*AbstractSyntaxTree& global_node = rule_list_node.add_child(token_global_statement);
-	global_node.add_child(Token(token_keyword_global));
-	global_node.add_child(Token(token_symbol_rule_terminal, " "));
-	global_node.add_child(Token(token_symbol_rule_terminal, "\n"));*/
+	// rule := identifier ":=" regular_expression
+	AbstractSyntaxTree& rule_0_node = rule_list_node.add_child(token_symbol_rule);
+	rule_0_node.add_child(Token(token_symbol_rule_name, "rule"));
+	rule_0_node.add_child(token_symbol_unamed_terminal);
+	AbstractSyntaxTree& token_symbol_rule_0_definition_alternative = rule_0_node.add_child(token_symbol_rule_definition_alternative);
+	AbstractSyntaxTree& token_symbol_rule_0_1 = token_symbol_rule_0_definition_alternative.add_child(token_symbol_rule_definition);
 
-	// local ignore = none
+	token_symbol_rule_0_1.add_child(Token(token_symbol_rule_non_terminal, "identifier"));
+	token_symbol_rule_0_1.add_child(Token(token_symbol_rule_terminal, ":="));
+	token_symbol_rule_0_1.add_child(Token(token_symbol_rule_non_terminal, "regular_expression"));
+
+
 	// regular_expression := "#" regular_expression_block* "#"
 	AbstractSyntaxTree& rule_1_node = rule_list_node.add_child(token_symbol_rule);
 	rule_1_node.add_child(Token(token_symbol_rule_name, "regular_expression"));
@@ -205,25 +214,6 @@ void SyntaxGenerator::execute(ProgramOption::Iterator option_caller) {
 	AbstractSyntaxTree& token_symbol_rule_3_2_ = token_symbol_rule_3_2.add_child(token_symbol_rule_optional);
 	token_symbol_rule_3_2_.add_child(Token(token_symbol_rule_non_terminal, "regular_expression_quantifier"));
 
-/*
-	// regular_expression_letter := "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" | "a" | "b" | "c" | "d" | "e" | "." ...
-	AbstractSyntaxTree& rule_4_node = rule_list_node.add_child(token_symbol_rule);
-	rule_4_node.add_child(Token(token_symbol_rule_name, "regular_expression_letter"));
-	rule_4_node.add_child(token_symbol_unamed_terminal);
-	AbstractSyntaxTree& token_symbol_rule_4_definition_alternative = rule_4_node.add_child(token_symbol_rule_definition_alternative);
-	AbstractSyntaxTree& token_symbol_rule_4_1 = token_symbol_rule_4_definition_alternative.add_child(token_symbol_rule_definition);
-	token_symbol_rule_4_1.add_child(Token(token_symbol_rule_terminal, "a"));
-	AbstractSyntaxTree& token_symbol_rule_4_2 = token_symbol_rule_4_definition_alternative.add_child(token_symbol_rule_definition);
-	token_symbol_rule_4_2.add_child(Token(token_symbol_rule_terminal, "b"));
-	AbstractSyntaxTree& token_symbol_rule_4_3 = token_symbol_rule_4_definition_alternative.add_child(token_symbol_rule_definition);
-	token_symbol_rule_4_3.add_child(Token(token_symbol_rule_terminal, "c"));
-	AbstractSyntaxTree& token_symbol_rule_4_4 = token_symbol_rule_4_definition_alternative.add_child(token_symbol_rule_definition);
-	token_symbol_rule_4_4.add_child(Token(token_symbol_rule_terminal, "d"));
-	AbstractSyntaxTree& token_symbol_rule_4_5 = token_symbol_rule_4_definition_alternative.add_child(token_symbol_rule_definition);
-	token_symbol_rule_4_5.add_child(Token(token_symbol_rule_terminal, "e"));
-	AbstractSyntaxTree& token_symbol_rule_4_6 = token_symbol_rule_4_definition_alternative.add_child(token_symbol_rule_definition);
-	token_symbol_rule_4_6.add_child(Token(token_symbol_rule_terminal, "."));
-*/
 	// regular_expression_range := "[" regular_expression_range_block* "]"
 	AbstractSyntaxTree& rule_5_node = rule_list_node.add_child(token_symbol_rule);
 	rule_5_node.add_child(Token(token_symbol_rule_name, "regular_expression_range"));
@@ -280,16 +270,31 @@ void SyntaxGenerator::execute(ProgramOption::Iterator option_caller) {
 	AbstractSyntaxTree& rule_9_re_1_6 = rule_9_re_1.add_child(token_symbol_regular_expression_range_block);
 	rule_9_re_1_6.add_child(Token(token_symbol_rule_terminal, "?"));
 	AbstractSyntaxTree& rule_9_re_1_7 = rule_9_re_1.add_child(token_symbol_regular_expression_range_block);
-	rule_9_re_1_7.add_child(Token(token_symbol_rule_terminal, "-")); // wut ?
+	rule_9_re_1_7.add_child(Token(token_symbol_rule_terminal, "-"));
 	rule_9_re_1.add_child(Token(token_symbol_unamed_terminal, "]"));
 
+	// whitespace := # #
+	AbstractSyntaxTree& rule_10_node = rule_list_node.add_child(token_symbol_rule);
+	rule_10_node.add_child(Token(token_symbol_rule_name, "whitespace"));
+	rule_10_node.add_child(token_symbol_unamed_terminal);
+	AbstractSyntaxTree& rule_10_re = rule_10_node.add_child(token_symbol_regular_expression);
 
-/*
-	rule_9_re.add_child(Token(token_symbol_regular_expression_letter, "a"));
-	AbstractSyntaxTree& rule_9_re_1 = rule_9_re.add_child(token_symbol_regular_expression_repetition);
-	AbstractSyntaxTree& rule_9_re_1_1 = rule_9_re_1.add_child(token_symbol_regular_expression_alternative);
-	rule_9_re_1_1.add_child(Token(token_symbol_regular_expression_letter, "b"));
-	rule_9_re_1_1.add_child(Token(token_symbol_regular_expression_letter, "c"));*/
+	rule_10_re.add_child(Token(token_symbol_regular_expression_letter, " "));
+
+	// identifier := #[a-z]*#
+	AbstractSyntaxTree& rule_11_node = rule_list_node.add_child(token_symbol_rule);
+	rule_11_node.add_child(Token(token_symbol_rule_name, "identifier"));
+	rule_11_node.add_child(token_symbol_unamed_terminal);
+	AbstractSyntaxTree& rule_11_re = rule_11_node.add_child(token_symbol_regular_expression);
+	AbstractSyntaxTree& rule_11_re_1 = rule_11_re.add_child(token_symbol_regular_expression_repetition);
+	AbstractSyntaxTree& rule_11_re_1_1 = rule_11_re_1.add_child(token_symbol_regular_expression_range);
+	rule_11_re_1_1.add_child(Token(token_symbol_unamed_terminal, "["));
+	AbstractSyntaxTree& rule_11_re_1_1_1 = rule_11_re_1_1.add_child(token_symbol_regular_expression_range_block);
+	rule_11_re_1_1_1.add_child(Token(token_symbol_regular_expression_letter, "a"));
+	rule_11_re_1_1_1.add_child(Token(token_symbol_rule_terminal, "-"));
+	rule_11_re_1_1_1.add_child(Token(token_symbol_regular_expression_letter, "z"));
+	rule_11_re_1_1.add_child(Token(token_symbol_unamed_terminal, "]"));
+
 	//
 	//	Parenthesis
 	//

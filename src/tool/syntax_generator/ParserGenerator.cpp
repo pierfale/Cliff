@@ -5,6 +5,7 @@ using namespace cliff;
 void ParserGenerator::generate_parser(const Syntax& ebnf_syntax, Syntax& output_syntax, SyntaxRepresentation& syntax_representation, std::map<const TokenSymbol*, std::vector<unsigned int>>& accepting_states) {
 
 	std::vector<Set> set_list;
+
 	set_list.emplace_back();
 	const SyntaxRepresentation::Rule& root_rule = syntax_representation.get_rule_by_symbol(output_syntax.get_symbol_from_name(Syntax::Root_symbol));
 	set_list.back().item_list.emplace_back(root_rule.alternatives().front(), 0, output_syntax.get_symbol_from_name(Syntax::EOF_symbol));
@@ -122,6 +123,12 @@ void ParserGenerator::set_lexer_accepting_state_or_else(Syntax& output_syntax, u
 		throw exception;
 }
 
+void ParserGenerator::set_lexer_accepting_state_if_none(Syntax& output_syntax, unsigned int index, unsigned int value) {
+	if(output_syntax.lexer_accepting_state_table()[index] == value || output_syntax.lexer_accepting_state_table()[index] == Syntax::Lexer_unaccepting_state) {
+		output_syntax.lexer_accepting_state_table()[index] = value;
+	}
+}
+
 void ParserGenerator::generate_parser(const Syntax& ebnf_syntax, Syntax& output_syntax, const SyntaxRepresentation& syntax_representation, const std::vector<Set>& set_list, std::map<const TokenSymbol*, std::vector<unsigned int>>& accepting_states) {
 	output_syntax.set_parser_table(set_list.size(), syntax_representation.dummy_rule_name().size());
 	output_syntax.set_lexer_parser_table(accepting_states.size(), set_list.size());
@@ -202,6 +209,14 @@ void ParserGenerator::generate_parser(const Syntax& ebnf_syntax, Syntax& output_
 			}
 			else {
 				output_syntax.parser_goto_table()[(std::distance(output_syntax.begin_non_terminal(),  output_syntax.end_non_terminal())+std::distance(std::begin(syntax_representation.dummy_rule_name()), it_symbol))*set_list.size()+set_index] = Syntax::Parser_unaccepting_state;
+			}
+		}
+
+		for(const auto& regular_expression : syntax_representation.regular_expression_list()) {
+			if(!regular_expression.second.used()) {
+				for(unsigned int state :  accepting_states.find(regular_expression.first)->second) {
+					set_lexer_accepting_state_if_none(output_syntax, state*set_list.size()+set_index, Syntax::Lexer_accepting_state_ignore);
+				}
 			}
 		}
 	}

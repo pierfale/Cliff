@@ -40,6 +40,7 @@ namespace cliff {
 		LetterRange& operator+(const LetterRange& that);
 		LetterRange& operator^(const LetterRange& that);
 
+		LetterRange& operator+=(const LetterRange& that);
 		LetterRange& operator-=(const LetterRange& that);
 
 		bool operator==(const LetterRange& that) const;

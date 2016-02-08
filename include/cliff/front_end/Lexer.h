@@ -28,6 +28,7 @@ class Lexer {
 
 		Syntax::State _current_state;
 		const TokenSymbol* _last_accepting_state;
+		Syntax::Index _last_accepting_state_flags;
 
 		std::queue<Syntax::Letter> _unaccepted_letter_buffer;
 		std::queue<Syntax::Letter> _accepted_letter_buffer;

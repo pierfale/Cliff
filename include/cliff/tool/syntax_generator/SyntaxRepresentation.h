@@ -164,6 +164,8 @@ namespace cliff {
 		std::vector<TokenSymbol> _dummy_rule_name;
 		unsigned int _dummy_rule_cursor;
 
+		std::vector<const TokenSymbol*> _ignore_list;
+
 	};
 }
 #endif

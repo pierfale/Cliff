@@ -86,6 +86,44 @@ LetterRange& LetterRange::operator^(const LetterRange& that) {
 	return *this;
 }
 
+LetterRange& LetterRange::operator+=(const LetterRange& that) {
+	auto this_it = std::begin(_range);
+	auto that_it = std::begin(that._range);
+
+	std::vector<std::pair<Letter, Letter>> new_range;
+
+	while(this_it != std::end(_range) && that_it != std::end(that._range)) {
+		if(this_it->second < that_it->first) {
+			++this_it;
+		}
+		else if(that_it->second < this_it->first) {
+			++that_it;
+		}
+		else {
+			new_range.emplace_back(std::min(this_it->first, that_it->first), std::max(this_it->second, that_it->second));
+
+			if(this_it->second < that_it->second) {
+				++this_it;
+			}
+			else {
+				++that_it;
+			}
+		}
+	}
+
+	while(this_it != std::end(_range)) {
+		new_range.emplace_back(*this_it);
+		++this_it;
+	}
+
+	while(that_it != std::end(that._range)) {
+		new_range.emplace_back(*that_it);
+		++that_it;
+	}
+	std::swap(new_range, _range);
+	return *this;
+}
+
 LetterRange& LetterRange::operator-=(const LetterRange& that) {
 	for(const auto& that_range : that.range()) {
 		for(unsigned int range_cursor=0; range_cursor < _range.size(); range_cursor++) {

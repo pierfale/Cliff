@@ -145,7 +145,7 @@ void Syntax::set_symbol_table(std::vector<const char*> symbols, unsigned int ter
 	for(unsigned int i = 0; i<symbols.size(); i++) {
 		std::cout << "#" << i << " : " << symbols[i] << std::endl;
 		new(_symbol_table+i) TokenSymbol(symbols[i]);
-		_symbols_index.insert(std::make_pair(_symbol_table[i].string(), i));
+		_symbols_index.emplace(std::piecewise_construct, std::forward_as_tuple(_symbol_table[i].string()),  std::forward_as_tuple(i));
 	}
 }
 
@@ -203,12 +203,15 @@ Syntax::State Syntax::next_lexer_state(State current_state, Letter current_lette
 		return 0; //TODO
 }
 
-const TokenSymbol* Syntax::lexer_accepting_state(State current_state, State parser_state) const {
+const TokenSymbol* Syntax::lexer_accepting_state(State current_state, State parser_state, Index& flags) const {
 	unsigned int assoc = _lexer_accepting_state_assoc_table[current_state];
 	if(assoc == Lexer_unaccepting_state)
 		return nullptr;
-	else
-		return _lexer_accepting_state_table[assoc*_parser_state_number+parser_state] == Lexer_unaccepting_state ? nullptr : &_symbol_table[_lexer_accepting_state_table[assoc*_parser_state_number+parser_state]];
+	else {
+		flags = _lexer_accepting_state_table[assoc*_parser_state_number+parser_state];
+		return _lexer_accepting_state_table[assoc*_parser_state_number+parser_state] == Lexer_unaccepting_state ? nullptr :
+				&_symbol_table[_lexer_accepting_state_table[assoc*_parser_state_number+parser_state] & Lexer_accepting_state_content_mask];
+	}
 }
 
 void Syntax::set_lexer_table(unsigned int state_number) {

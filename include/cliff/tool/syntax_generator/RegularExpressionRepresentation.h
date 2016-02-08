@@ -17,12 +17,16 @@ namespace cliff {
 		NonDeterministeFiniteAutomataNode& start_node();
 		const NonDeterministeFiniteAutomataNode& start_node() const;
 
+		bool used() const;
+		void set_used();
+
 
 	private:
 		NonDeterministeFiniteAutomataNode& construct(const Syntax& ebnf_syntax, const AbstractSyntaxTree& current_tree_node, NonDeterministeFiniteAutomataNode& current_automata_node);
 
 		MemoryContainer<NonDeterministeFiniteAutomataNode> _memory;
 		NonDeterministeFiniteAutomataNode _start_node;
+		bool _used;
 
 	};
 }

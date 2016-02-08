@@ -108,6 +108,7 @@ namespace cliff {
 
 		static void set_action_table_or_else(Syntax& output_syntax, unsigned int index, unsigned int action, unsigned int reduce_number, exception::UserMessage&& exception);
 		static void set_lexer_accepting_state_or_else(Syntax& output_syntax, unsigned int index, unsigned int value, exception::UserMessage&& exception);
+		static void set_lexer_accepting_state_if_none(Syntax& output_syntax, unsigned int index, unsigned int value);
 	};
 }
 #endif

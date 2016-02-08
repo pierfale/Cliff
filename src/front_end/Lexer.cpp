@@ -50,21 +50,27 @@ bool Lexer::process_next(Syntax::State parser_state, Token& output) {
 				token_content.append(1, _accepted_letter_buffer.front());
 				_accepted_letter_buffer.pop();
 			}
-			output.set(*_last_accepting_state, token_content.c_str());
-
-			_last_accepting_state = nullptr;
-			_current_state = Syntax::Lexer_init_state;
 
 			while (!_unaccepted_letter_buffer.empty()) {
 				_restart_letter_buffer.push(_unaccepted_letter_buffer.front());
 				_unaccepted_letter_buffer.pop();
 			}
 
+			if(!(_last_accepting_state_flags & Syntax::Lexer_accepting_state_ignore)) {
+				output.set(*_last_accepting_state, token_content.c_str());
 
-			return true;
+				_last_accepting_state = nullptr;
+				_current_state = Syntax::Lexer_init_state;
+
+				return true;
+			}
+			else {
+				_last_accepting_state = nullptr;
+				_current_state = Syntax::Lexer_init_state;
+			}
 		}
 
-		const TokenSymbol* current_symbol = _syntax.lexer_accepting_state(_current_state, parser_state);
+		const TokenSymbol* current_symbol = _syntax.lexer_accepting_state(_current_state, parser_state, _last_accepting_state_flags);
 		if(current_symbol != nullptr) {
 			while(!_unaccepted_letter_buffer.empty()) {
 				_accepted_letter_buffer.push(_unaccepted_letter_buffer.front());

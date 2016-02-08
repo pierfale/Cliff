@@ -133,7 +133,12 @@ void SyntaxRepresentation::construct_rule(const Syntax& ebnf_syntax, const Synta
 	}
 	else if(current_node.type() == ebnf_syntax.get_symbol_from_name("rule_non_terminal")) {
 		const TokenSymbol& symbol = generated_syntax.get_symbol_from_name(current_node.content());
-		current_rule.add_child(_regular_expression_list.find(&symbol) == std::end(_regular_expression_list) ?
+
+		auto it_find = _regular_expression_list.find(&symbol);
+
+		if(it_find != std::end(_regular_expression_list))
+			it_find->second.set_used();
+		current_rule.add_child(it_find == std::end(_regular_expression_list) ?
 								   RawSubRule::NonTerminal : RawSubRule::Terminal, &symbol);
 
 
