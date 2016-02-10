@@ -97,14 +97,14 @@ namespace cliff {
 			InlinedAlternative(const TokenSymbol& _rule_name, const std::vector<Symbol>& rule_definition, unsigned int flags);
 
 			void first_after(const SyntaxRepresentation& syntax_representation, unsigned int position, std::vector<const TokenSymbol*>& output) const;
-			bool is_epsilon_productive(const SyntaxRepresentation& syntax_representation, unsigned int position) const;
+			bool is_epsilon_productive(const SyntaxRepresentation& syntax_representation, unsigned int position, bool till_end = false) const;
 
 			unsigned int flags() const;
 			const std::vector<Symbol>& sequence() const;
 			const TokenSymbol& rule_name() const;
 
 			void _first_after(const SyntaxRepresentation& syntax_representation, unsigned int position, std::vector<const TokenSymbol*>& output, std::vector<const TokenSymbol*>& history) const;
-			bool _is_epsilon_productive(const SyntaxRepresentation& syntax_representation, unsigned int position, std::vector<const TokenSymbol*>& history) const;
+			bool _is_epsilon_productive(const SyntaxRepresentation& syntax_representation, unsigned int position, bool till_end, std::vector<const TokenSymbol*>& history) const;
 
 		private:
 
@@ -122,7 +122,7 @@ namespace cliff {
 
 			void add_alternative(const std::vector<Symbol>& rule_definition, unsigned int flags);
 			void first(const SyntaxRepresentation& syntax_representation, std::vector<const TokenSymbol*>& output) const;
-			bool is_epsilon_productive(const SyntaxRepresentation& syntax_representation) const;
+			bool is_epsilon_productive(const SyntaxRepresentation& syntax_representation, bool till_end = false) const;
 
 			const TokenSymbol& rule_name() const;
 			const std::vector<InlinedAlternative>& alternatives() const;
@@ -130,7 +130,7 @@ namespace cliff {
 			void print(std::ostream& stream) const;
 		private:
 			void _first(const SyntaxRepresentation& syntax_representation, std::vector<const TokenSymbol*>& output, std::vector<const TokenSymbol*>& history) const;
-			bool _is_epsilon_productive(const SyntaxRepresentation& syntax_representation, std::vector<const TokenSymbol*>& history) const;
+			bool _is_epsilon_productive(const SyntaxRepresentation& syntax_representation, bool till_end, std::vector<const TokenSymbol*>& history) const;
 
 			const TokenSymbol& _rule_name;
 			std::vector<InlinedAlternative> _alternative_list;

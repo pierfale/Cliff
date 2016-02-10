@@ -28,6 +28,7 @@ bool Lexer::process_next(Syntax::State parser_state, Token& output) {
 				std::string token_content;
 				token_content.insert(0, _accepted_letter_buffer.size(), _accepted_letter_buffer.front());
 				output.set(*_last_accepting_state, token_content.c_str());
+				std::cout << "accept " << _last_accepting_state->string() << " : " << token_content << std::endl;
 				_last_accepting_state = nullptr;
 				return true;
 			}
@@ -37,7 +38,13 @@ bool Lexer::process_next(Syntax::State parser_state, Token& output) {
 		}
 
 		_unaccepted_letter_buffer.push(current_letter);
+		std::cout << ">" << _current_state << ", " << current_letter << " = " << _syntax.next_lexer_state(_current_state, current_letter) << std::endl;
 		_current_state = _syntax.next_lexer_state(_current_state, current_letter);
+
+		if(_syntax.is_disabled_path(_current_state, parser_state)) {
+			std::cout << _current_state << ";" << parser_state << " Unreachable!" << std::endl;
+			_current_state = Syntax::Lexer_state_error;
+		}
 
 
 		if(_current_state == Syntax::Lexer_state_error && _last_accepting_state == nullptr) {
@@ -58,6 +65,7 @@ bool Lexer::process_next(Syntax::State parser_state, Token& output) {
 
 			if(!(_last_accepting_state_flags & Syntax::Lexer_accepting_state_ignore)) {
 				output.set(*_last_accepting_state, token_content.c_str());
+				std::cout << "accept " << _last_accepting_state->string() << " : " << token_content << std::endl;
 
 				_last_accepting_state = nullptr;
 				_current_state = Syntax::Lexer_init_state;

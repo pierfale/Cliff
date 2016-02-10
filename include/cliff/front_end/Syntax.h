@@ -26,9 +26,11 @@ namespace cliff {
 		static const State Lexer_init_state = 0x0;
 		static const State Lexer_state_error = 0xFFFFFFFF;
 
-		static const Index Lexer_unaccepting_state = 0xFFFFFFFF;
+		static const Index Lexer_unaccepting_state = 0x0FFFFFFF;
 		static const Index Lexer_accepting_state_ignore = 0x80000000;
+		static const Index Lexer_disabled_path = 0x40000000;
 		static const Index Lexer_accepting_state_content_mask = 0x7FFFFFF;
+
 
 		static const int Direct_letter_range = 128;
 
@@ -70,6 +72,7 @@ namespace cliff {
 		//
 		State next_lexer_state(State current_state, Letter current_letter) const;
 		const TokenSymbol* lexer_accepting_state(State current_state, State parser_state, Index& flags) const;
+		bool is_disabled_path(State current_state, State parser_state) const;
 
 		void set_lexer_table(unsigned int state_number);
 		State* lexer_table();
@@ -101,10 +104,6 @@ namespace cliff {
 
 		Index* lexer_accepting_state_table();
 		const Index* lexer_accepting_state_table() const;
-
-		Index* lexer_accepting_state_assoc_table();
-		const Index* lexer_accepting_state_assoc_table() const;
-
 
 	private:
 		//
@@ -140,8 +139,6 @@ namespace cliff {
 		//	Mixed
 		//
 		Index* _lexer_accepting_state_table;
-		Index* _lexer_accepting_state_assoc_table;
-		unsigned int _lexer_accepting_state_number;
 
 		Index* _goto_table;
 		std::tuple<const TokenSymbol*, unsigned int> _reduce_table;

@@ -319,25 +319,51 @@ void SyntaxRepresentation::InlinedAlternative::first_after(const SyntaxRepresent
 }
 
 void SyntaxRepresentation::InlinedAlternative::_first_after(const SyntaxRepresentation& syntax_representation, unsigned int position, std::vector<const TokenSymbol*>& output, std::vector<const TokenSymbol*>& history) const {
-	if(position < _sequence.size()) {
-		if(_sequence[position].is_terminal())
+	while(position < _sequence.size()) {
+
+		if(_sequence[position].is_terminal()) {
 			output.push_back(&_sequence[position].content());
+			break;
+		}
+
+		const Rule& rule = syntax_representation.get_rule_by_symbol(_sequence[position].content());
+		rule._first(syntax_representation, output, history);
+
+		if(rule.is_epsilon_productive(syntax_representation))
+			position++;
 		else
-			syntax_representation.get_rule_by_symbol(_sequence[position].content())._first(syntax_representation, output, history);
+			break;
 	}
 }
 
-bool SyntaxRepresentation::InlinedAlternative::is_epsilon_productive(const SyntaxRepresentation& syntax_representation, unsigned int position) const {
+bool SyntaxRepresentation::InlinedAlternative::is_epsilon_productive(const SyntaxRepresentation& syntax_representation, unsigned int position, bool till_end) const {
 	std::vector<const TokenSymbol*> history;
-	_is_epsilon_productive(syntax_representation, position, history);
+	_is_epsilon_productive(syntax_representation, position, till_end, history);
 }
 
-bool SyntaxRepresentation::InlinedAlternative::_is_epsilon_productive(const SyntaxRepresentation& syntax_representation, unsigned int position, std::vector<const TokenSymbol*>& history) const {
-	if(position < _sequence.size()) {
-		if(_sequence[position].is_terminal())
-			return false;
-		else
-			return syntax_representation.get_rule_by_symbol(_sequence[position].content())._is_epsilon_productive(syntax_representation, history);
+bool SyntaxRepresentation::InlinedAlternative::_is_epsilon_productive(const SyntaxRepresentation& syntax_representation, unsigned int position, bool till_end, std::vector<const TokenSymbol*>& history) const {
+	if(till_end) {
+		while(position < _sequence.size()) {
+			if(_sequence[position].is_terminal()) {
+				return false;
+			}
+			else
+				if(!syntax_representation.get_rule_by_symbol(_sequence[position].content())._is_epsilon_productive(syntax_representation, till_end, history)) {
+					return false;
+				}
+
+			position++;
+		}
+		return true;
+	}
+	else {
+
+		if(position < _sequence.size()) {
+			if(_sequence[position].is_terminal())
+				return false;
+			else
+				return syntax_representation.get_rule_by_symbol(_sequence[position].content())._is_epsilon_productive(syntax_representation, till_end, history);
+		}
 	}
 }
 
@@ -380,20 +406,21 @@ void SyntaxRepresentation::Rule::_first(const SyntaxRepresentation& syntax_repre
 		alternative._first_after(syntax_representation, 0, output, history);
 }
 
-bool SyntaxRepresentation::Rule::is_epsilon_productive(const SyntaxRepresentation& syntax_representation) const {
+bool SyntaxRepresentation::Rule::is_epsilon_productive(const SyntaxRepresentation& syntax_representation, bool till_end) const {
 	std::vector<const TokenSymbol*> history;
-	_is_epsilon_productive(syntax_representation, history);
+	_is_epsilon_productive(syntax_representation, till_end, history);
 }
 
-bool SyntaxRepresentation::Rule::_is_epsilon_productive(const SyntaxRepresentation& syntax_representation, std::vector<const TokenSymbol*>& history) const {
+bool SyntaxRepresentation::Rule::_is_epsilon_productive(const SyntaxRepresentation& syntax_representation, bool till_end, std::vector<const TokenSymbol*>& history) const {
 	if(std::find(std::begin(history), std::end(history), &_rule_name) != std::end(history))
 		return false;
 
 	history.push_back(&_rule_name);
 
 	for(const InlinedAlternative& alternative : _alternative_list)
-		if(alternative._is_epsilon_productive(syntax_representation, 0, history));
+		if(alternative._is_epsilon_productive(syntax_representation, 0, till_end, history))
 			return true;
+
 	return false;
 }
 

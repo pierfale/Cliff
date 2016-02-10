@@ -15,7 +15,7 @@ namespace cliff {
 	class LexerGenerator {
 
 	public:
-		static void generate_lexer(const Syntax& ebnf_syntax, const AbstractSyntaxTree& syntax_tree, Syntax& output_syntax, SyntaxRepresentation& syntax_representation, std::map<const TokenSymbol*, std::vector<unsigned int>>& accepting_state);
+		static void generate_lexer(const Syntax& ebnf_syntax, const AbstractSyntaxTree& syntax_tree, Syntax& output_syntax, SyntaxRepresentation& syntax_representation, std::vector<const DeterministeFiniteAutomataNode*>& lexer_state_list, DeterministeFiniteAutomataNode& dfa_start);
 
 	private:
 		LexerGenerator() = delete;
@@ -26,7 +26,7 @@ namespace cliff {
 		static void reduce_dfa(const Syntax& ebnf_syntax, DeterministeFiniteAutomataNode& start_node);
 		static void segment_output_range(const NonDeterministeFiniteAutomataNode& nfa_node, std::map<LetterRange, std::vector<const NonDeterministeFiniteAutomataNode*>>& output_list);
 		static bool is_equal_transition(const DeterministeFiniteAutomataNode* node_1, const DeterministeFiniteAutomataNode* node_2);
-		static void generate_lexer(Syntax& output_syntax, const DeterministeFiniteAutomataNode& start_node, std::map<const TokenSymbol*, std::vector<unsigned int>>& accepting_state);
+		static void generate_lexer(Syntax& output_syntax, const DeterministeFiniteAutomataNode& start_node, std::vector<const DeterministeFiniteAutomataNode*>& lexer_state_list);
 	};
 }
 #endif

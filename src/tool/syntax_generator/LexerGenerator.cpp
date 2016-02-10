@@ -2,7 +2,8 @@
 
 using namespace cliff;
 
-void LexerGenerator::generate_lexer(const Syntax& ebnf_syntax, const AbstractSyntaxTree& syntax_tree, Syntax& output_syntax, SyntaxRepresentation& syntax_representation, std::map<const TokenSymbol*, std::vector<unsigned int>>& accepting_states) {
+void LexerGenerator::generate_lexer(const Syntax& ebnf_syntax, const AbstractSyntaxTree& syntax_tree, Syntax& output_syntax, SyntaxRepresentation& syntax_representation,
+									std::vector<const DeterministeFiniteAutomataNode*>& lexer_state_list, DeterministeFiniteAutomataNode& dfa_start) {
 	MemoryContainer<NonDeterministeFiniteAutomataNode> nfa_memory;
 	NonDeterministeFiniteAutomataNode nfa_start_node(nfa_memory);
 
@@ -36,20 +37,20 @@ void LexerGenerator::generate_lexer(const Syntax& ebnf_syntax, const AbstractSyn
 	nfa_start_node.print(std::cout);
 	std::cout << std::endl;
 
-	MemoryContainer<DeterministeFiniteAutomataNode> dfa_memory;
-	DeterministeFiniteAutomataNode dfa_start_node(dfa_memory);
-	create_dfa(ebnf_syntax, nfa_start_node, dfa_start_node);
+
+
+	create_dfa(ebnf_syntax, nfa_start_node, dfa_start);
 	std::cout << "Derterministe Finite Automata : " << std::endl;
-	dfa_start_node.print(std::cout);
+	dfa_start.print(std::cout);
 	std::cout << std::endl;
 
-	reduce_dfa(ebnf_syntax, dfa_start_node);
+	reduce_dfa(ebnf_syntax, dfa_start);
 
 	std::cout << "Reduced Derterministe Finite Automata : " << std::endl;
-	dfa_start_node.print(std::cout);
+	dfa_start.print(std::cout);
 	std::cout << std::endl;
 
-	generate_lexer(output_syntax, dfa_start_node, accepting_states);
+	generate_lexer(output_syntax, dfa_start, lexer_state_list);
 }
 
 void LexerGenerator::get_terminal_content(const Syntax& ebnf_syntax, const AbstractSyntaxTree& syntax_tree, std::vector<const char*>& symbols_content) {
@@ -172,7 +173,6 @@ void LexerGenerator::segment_output_range(const NonDeterministeFiniteAutomataNod
 }
 
 bool LexerGenerator::epsilon_closure(const NonDeterministeFiniteAutomataNode& nfa_node, std::vector<const NonDeterministeFiniteAutomataNode*>& output_list, LetterRange range) {
-	std::cout << "compute epsilon closure for " << range << std::endl;
 	std::stack<std::pair<const NonDeterministeFiniteAutomataNode*, bool>> state_stack;
 	state_stack.push(std::make_pair(&nfa_node, false));
 
@@ -308,60 +308,41 @@ bool LexerGenerator::is_equal_transition(const DeterministeFiniteAutomataNode* n
 		&& std::is_permutation(std::begin(node_1->accepting_state()), std::end(node_1->accepting_state()), std::begin(node_2->accepting_state()));
 }
 
-void LexerGenerator::generate_lexer(Syntax& output_syntax, const DeterministeFiniteAutomataNode& start_node, std::map<const TokenSymbol*, std::vector<unsigned int>>& accepting_states) {
+void LexerGenerator::generate_lexer(Syntax& output_syntax, const DeterministeFiniteAutomataNode& start_node, std::vector<const DeterministeFiniteAutomataNode*>& lexer_state_list) {
 	std::stack<const DeterministeFiniteAutomataNode*> node_stack;
 	node_stack.push(&start_node);
-	std::vector<const DeterministeFiniteAutomataNode*> node_list;
-	node_list.push_back(&start_node);
+
+	lexer_state_list.push_back(&start_node);
 
 	LetterRange direct_letter_range(0, Syntax::Direct_letter_range-1);
-
-	std::map<const DeterministeFiniteAutomataNode*, unsigned int> accepting_state_assoc;
 
 	while(!node_stack.empty()) {
 		const DeterministeFiniteAutomataNode* current_node = node_stack.top();
 		node_stack.pop();
 
-		if(current_node->is_accepting_state()) {
-			unsigned int identifiant = accepting_states.size();
-			for(const TokenSymbol* accepting_state_symbol : current_node->accepting_state()) {
-				auto it_find = accepting_states.find(accepting_state_symbol);
-				if(it_find == std::end(accepting_states))
-					it_find = accepting_states.emplace(std::piecewise_construct, std::forward_as_tuple(accepting_state_symbol), std::forward_as_tuple()).first;
-				it_find->second.push_back(identifiant);
-			}
-			accepting_state_assoc.emplace(std::piecewise_construct, std::forward_as_tuple(current_node), std::forward_as_tuple(identifiant));
-		}
-
 		for(auto& child_node : current_node->transitions()) {
-			if(std::find(std::begin(node_list), std::end(node_list), child_node.second) == std::end(node_list)) {
-				node_list.push_back(child_node.second);
+			if(std::find(std::begin(lexer_state_list), std::end(lexer_state_list), child_node.second) == std::end(lexer_state_list)) {
+				lexer_state_list.push_back(child_node.second);
 				node_stack.push(child_node.second);
 			}
 		}
 	}
 
-	output_syntax.set_lexer_table(node_list.size());
+	output_syntax.set_lexer_table(lexer_state_list.size());
 
-	for(unsigned int state_index=0; state_index<node_list.size(); state_index++) {
+	for(unsigned int state_index=0; state_index<lexer_state_list.size(); state_index++) {
+
 		for(unsigned int char_index=0; char_index<Syntax::Direct_letter_range; char_index++) {
 			output_syntax.lexer_table()[state_index*Syntax::Direct_letter_range+char_index] = Syntax::Lexer_state_error;
 		}
 
-		auto accepting_state_assoc_it = accepting_state_assoc.find(node_list[state_index]);
-		if(accepting_state_assoc_it != std::end(accepting_state_assoc)) {
-			output_syntax.lexer_accepting_state_assoc_table()[state_index] = accepting_state_assoc_it->second;
-		}
-		else
-			output_syntax.lexer_accepting_state_assoc_table()[state_index] = Syntax::Lexer_unaccepting_state;
-
-		for(auto& transition : node_list[state_index]->transitions()) {
+		for(auto& transition : lexer_state_list[state_index]->transitions()) {
 			LetterRange output_direct_range;
 			direct_letter_range.intersection(transition.first, output_direct_range);
 			std::vector<Letter> letter_list;
 			output_direct_range.to_letter_list(letter_list);
 			for(Letter letter : letter_list) {
-				output_syntax.lexer_table()[state_index*Syntax::Direct_letter_range+letter] = std::distance(std::begin(node_list), std::find(std::begin(node_list), std::end(node_list), transition.second));
+				output_syntax.lexer_table()[state_index*Syntax::Direct_letter_range+letter] = std::distance(std::begin(lexer_state_list), std::find(std::begin(lexer_state_list), std::end(lexer_state_list), transition.second));
 			}
 
 			//TODO UTF-8 character

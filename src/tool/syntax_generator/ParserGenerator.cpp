@@ -2,7 +2,7 @@
 
 using namespace cliff;
 
-void ParserGenerator::generate_parser(const Syntax& ebnf_syntax, Syntax& output_syntax, SyntaxRepresentation& syntax_representation, std::map<const TokenSymbol*, std::vector<unsigned int>>& accepting_states) {
+void ParserGenerator::generate_parser(const Syntax& ebnf_syntax, Syntax& output_syntax, SyntaxRepresentation& syntax_representation, std::vector<const DeterministeFiniteAutomataNode*>& lexer_state_list) {
 
 	std::vector<Set> set_list;
 
@@ -13,15 +13,16 @@ void ParserGenerator::generate_parser(const Syntax& ebnf_syntax, Syntax& output_
 
 	construct_closure_set(ebnf_syntax, output_syntax, syntax_representation, set_list);
 
-	/*int cpt = 0;
+	int cpt = 0;
 	for(const Set& set : set_list) {
 		std::cout << "====SET==== " << cpt++ << " (" << set.predecessor_set << ",\"" << (set.transition_symbol != nullptr ? set.transition_symbol->string() : "none") << "\"" << std::endl;
 		for(const Item& item : set.item_list) {
 			item.print(std::cout);
 		}
-	}*/
+	}
 
-	generate_parser(ebnf_syntax, output_syntax, syntax_representation, set_list, accepting_states);
+
+	generate_parser(ebnf_syntax, output_syntax, syntax_representation, set_list, lexer_state_list);
 }
 
 void ParserGenerator::construct_closure_set(const Syntax& ebnf_syntax, const Syntax& generated_syntax, const SyntaxRepresentation& syntax_representation, std::vector<Set>& output) {
@@ -51,6 +52,28 @@ void ParserGenerator::construct_closure_set(const Syntax& ebnf_syntax, const Syn
 	}
 }
 
+void ParserGenerator::compute_first_of(const SyntaxRepresentation& syntax_representation, const std::vector<SyntaxRepresentation::Symbol>& list, std::vector<const TokenSymbol*>& output, std::vector<const TokenSymbol*>& history) {
+
+	unsigned int cursor = 0;
+	while(cursor < list.size()) {
+		if(list[cursor].is_terminal() || syntax_representation.regular_expression_list().find(&list[cursor].content()) != std::end(syntax_representation.regular_expression_list())) {
+			output.push_back(&list[cursor].content());
+			break;
+		}
+		else {
+			if(std::find(std::begin(history), std::end(history), &list[cursor].content()) != std::end(history))
+				break;
+
+			const SyntaxRepresentation::Rule& rule = syntax_representation.get_rule_by_symbol(list[cursor].content());
+			history.push_back(&list[cursor].content());
+
+			for(const SyntaxRepresentation::InlinedAlternative& alternative : rule.alternatives())
+				compute_first_of(syntax_representation, alternative.sequence(), output, history);
+		}
+
+	}
+}
+
 void ParserGenerator::closure_procedure(const Syntax& ebnf_syntax, const Syntax& generated_syntax, const SyntaxRepresentation& syntax_representation, Set& output_set) {
 	Set unchecked_item_list;
 	std::swap(output_set.item_list, unchecked_item_list.item_list);
@@ -62,8 +85,36 @@ void ParserGenerator::closure_procedure(const Syntax& ebnf_syntax, const Syntax&
 
 		output_set.item_list.push_back(current_item);
 
+		if(current_item.cursor < current_item.rule->sequence().size() && !current_item.rule->sequence()[current_item.cursor].is_terminal()) {
+			std::vector<SyntaxRepresentation::Symbol> next_list;
+			std::copy(std::begin(current_item.rule->sequence())+current_item.cursor+1, std::end(current_item.rule->sequence()), std::back_inserter(next_list));
+			next_list.emplace_back(*current_item.next_token, true);
+
+			std::vector<const TokenSymbol*> first_list;
+			std::vector<const TokenSymbol*> history;
+			compute_first_of(syntax_representation, next_list, first_list, history);
+
+			const SyntaxRepresentation::Rule& rule = syntax_representation.get_rule_by_symbol(current_item.rule->sequence()[current_item.cursor].content());
+
+			for(const SyntaxRepresentation::InlinedAlternative& alternative : rule.alternatives()) {
+				for(const TokenSymbol* first_symbol : first_list) {
+					Item new_item(alternative, 0, *first_symbol);
+					if(std::find(std::begin(output_set.item_list), std::end(output_set.item_list), new_item) == std::end(output_set.item_list)
+							&& std::find(std::begin(unchecked_item_list.item_list), std::end(unchecked_item_list.item_list), new_item) == std::end(unchecked_item_list.item_list))
+						 {
+						unchecked_item_list.item_list.push_back(new_item);
+					}
+
+				}
+			}
+
+		}
+
+
+
+		/*
 		std::vector<std::pair<SyntaxRepresentation::Symbol, bool>> following_symbol;
-		current_item.following_symbols(following_symbol);
+		current_item.following_symbols(following_symbol); // TODO remove following symbol
 
 		std::vector<const TokenSymbol*> first_list;
 		current_item.rule->first_after(syntax_representation, current_item.cursor+1, first_list);
@@ -81,19 +132,28 @@ void ParserGenerator::closure_procedure(const Syntax& ebnf_syntax, const Syntax&
 						Item new_item(alternative, 0, *first_symbol);
 						if(std::find(std::begin(output_set.item_list), std::end(output_set.item_list), new_item) == std::end(output_set.item_list)
 								&& std::find(std::begin(unchecked_item_list.item_list), std::end(unchecked_item_list.item_list), new_item) == std::end(unchecked_item_list.item_list))
+							 {
 							unchecked_item_list.item_list.push_back(new_item);
+							current_item.print(std::cout);
+							std::cout << "=> ";
+							new_item.print(std::cout);
+						}
 
 					}
-
-					if(current_item.rule->is_epsilon_productive(syntax_representation, current_item.cursor)) {
+					if(current_item.rule->is_epsilon_productive(syntax_representation, current_item.cursor, true)) {
 						Item new_item(alternative, 0, *(current_item.next_token));
 						if(std::find(std::begin(output_set.item_list), std::end(output_set.item_list), new_item) == std::end(output_set.item_list)
 								&& std::find(std::begin(unchecked_item_list.item_list), std::end(unchecked_item_list.item_list), new_item) == std::end(unchecked_item_list.item_list))
-							unchecked_item_list.item_list.push_back(new_item);
+							{
+						   unchecked_item_list.item_list.push_back(new_item);
+						   current_item.print(std::cout);
+						   std::cout << "=> (eps) ";
+						   new_item.print(std::cout);
+					   }
 					}
 				}
 			}
-		}
+		}*/
 	}
 }
 
@@ -129,9 +189,16 @@ void ParserGenerator::set_lexer_accepting_state_if_none(Syntax& output_syntax, u
 	}
 }
 
-void ParserGenerator::generate_parser(const Syntax& ebnf_syntax, Syntax& output_syntax, const SyntaxRepresentation& syntax_representation, const std::vector<Set>& set_list, std::map<const TokenSymbol*, std::vector<unsigned int>>& accepting_states) {
+void ParserGenerator::generate_parser(const Syntax& ebnf_syntax, Syntax& output_syntax, const SyntaxRepresentation& syntax_representation, const std::vector<Set>& set_list, std::vector<const DeterministeFiniteAutomataNode*>& lexer_state_list) {
 	output_syntax.set_parser_table(set_list.size(), syntax_representation.dummy_rule_name().size());
-	output_syntax.set_lexer_parser_table(accepting_states.size(), set_list.size());
+	output_syntax.set_lexer_parser_table(lexer_state_list.size(), set_list.size());
+
+	std::vector<const TokenSymbol*> ignored_token;
+	for(const auto& regular_expression : syntax_representation.regular_expression_list()) {
+		if(!regular_expression.second.used()) {
+			ignored_token.push_back(regular_expression.first);
+		}
+	}
 
 	for(unsigned int set_index = 0; set_index < set_list.size(); set_index++) {
 		for(auto it_symbol = output_syntax.begin_terminal(); it_symbol != output_syntax.end_terminal(); ++it_symbol) {
@@ -139,8 +206,10 @@ void ParserGenerator::generate_parser(const Syntax& ebnf_syntax, Syntax& output_
 			output_syntax.parser_reduce_number()[(it_symbol-output_syntax.begin_terminal())*set_list.size()+set_index] = 0;
 		}
 
-		for(unsigned int i=0; i<accepting_states.size(); i++)
+		for(unsigned int i=0; i<lexer_state_list.size(); i++)
 			output_syntax.lexer_accepting_state_table()[i*set_list.size()+set_index] = Syntax::Lexer_unaccepting_state;
+
+		std::vector<const TokenSymbol*> accept_token_list;
 
 		// TODO initialize lexer accepting state
 		for(const Item& item : set_list[set_index].item_list) {
@@ -162,14 +231,7 @@ void ParserGenerator::generate_parser(const Syntax& ebnf_syntax, Syntax& output_
 							item.rule->sequence().size(),
 							exception::UserMessage(exception::UserMessage::Error, "Parser : reduce/reduce conflict"));
 
-					for(const std::pair<const TokenSymbol*, std::vector<unsigned int>>& accepting_state : accepting_states) {
-						if(*item.next_token == *accepting_state.first) {
-							for(unsigned int accepting_state_number : accepting_state.second) {
-								set_lexer_accepting_state_or_else(output_syntax, accepting_state_number*set_list.size()+set_index, std::distance(output_syntax.begin_terminal(), accepting_state.first),
-																  exception::UserMessage(exception::UserMessage::Error, "Parser : lexer accepting state conflict"));
-							}
-						}
-					}
+					accept_token_list.push_back(item.next_token);
 				}
 			}
 			else if(item.rule->sequence()[item.cursor].is_terminal() && (j = find_goto(ebnf_syntax, output_syntax, syntax_representation, set_list[set_index], item.rule->sequence()[item.cursor].content(), set_list)) != -1) {
@@ -179,15 +241,7 @@ void ParserGenerator::generate_parser(const Syntax& ebnf_syntax, Syntax& output_
 						0,
 						exception::UserMessage(exception::UserMessage::Error, "Parser : shift/reduce conflict"));
 
-
-				for(const std::pair<const TokenSymbol*, std::vector<unsigned int>>& accepting_state : accepting_states) {
-					if(item.rule->sequence()[item.cursor].content() == *accepting_state.first) {
-						for(unsigned int accepting_state_number : accepting_state.second) {
-							set_lexer_accepting_state_or_else(output_syntax, accepting_state_number*set_list.size()+set_index, std::distance(output_syntax.begin_terminal(), accepting_state.first),
-															  exception::UserMessage(exception::UserMessage::Error, "Parser : lexer accepting state conflict"));
-						}
-					}
-				}
+				accept_token_list.push_back(&item.rule->sequence()[item.cursor].content());
 
 			}
 		}
@@ -212,15 +266,36 @@ void ParserGenerator::generate_parser(const Syntax& ebnf_syntax, Syntax& output_
 			}
 		}
 
-		for(const auto& regular_expression : syntax_representation.regular_expression_list()) {
-			if(!regular_expression.second.used()) {
-				for(unsigned int state :  accepting_states.find(regular_expression.first)->second) {
-					set_lexer_accepting_state_if_none(output_syntax, state*set_list.size()+set_index, Syntax::Lexer_accepting_state_ignore);
+		for(const TokenSymbol* symbol : accept_token_list) {
+			for(unsigned int lexer_state = 0; lexer_state < lexer_state_list.size(); lexer_state++) {
+				for(const TokenSymbol* accepting_state : lexer_state_list[lexer_state]->accepting_state()) {
+					if(*symbol == *accepting_state) {
+						set_lexer_accepting_state_or_else(output_syntax, lexer_state*set_list.size()+set_index, std::distance(output_syntax.begin_terminal(), symbol),
+														  exception::UserMessage(exception::UserMessage::Error, "Parser : lexer accepting state conflict : "+std::string(symbol->string())));
+					}
 				}
 			}
 		}
-	}
 
+		for(const TokenSymbol* symbol : ignored_token) {
+			for(unsigned int lexer_state = 0; lexer_state < lexer_state_list.size(); lexer_state++) {
+				for(const TokenSymbol* accepting_state : lexer_state_list[lexer_state]->accepting_state()) {
+					if(*symbol == *accepting_state) {
+						set_lexer_accepting_state_if_none(output_syntax, lexer_state*set_list.size()+set_index, Syntax::Lexer_accepting_state_ignore);
+					}
+				}
+			}
+		}
+
+		std::copy(std::begin(ignored_token), std::end(ignored_token), std::back_inserter(accept_token_list));
+
+		for(unsigned int lexer_state = 0; lexer_state < lexer_state_list.size(); lexer_state++) {
+			if(!reachable_lexing_state(*lexer_state_list[lexer_state], accept_token_list)) {
+				output_syntax.lexer_accepting_state_table()[lexer_state*set_list.size()+set_index] |= Syntax::Lexer_disabled_path;
+			}
+		}
+
+	}
 }
 
 int ParserGenerator::find_goto(const Syntax& ebnf_syntax, const Syntax& generated_syntax, const SyntaxRepresentation& syntax_representation, const Set& input_set, const TokenSymbol& symbol, const std::vector<Set>& set_list) {
@@ -232,4 +307,30 @@ int ParserGenerator::find_goto(const Syntax& ebnf_syntax, const Syntax& generate
 			return i;
 	}
 	return -1;
+}
+
+bool ParserGenerator::reachable_lexing_state(const DeterministeFiniteAutomataNode& start_node, std::vector<const TokenSymbol*> possible_accepting_token) {
+	std::stack<const DeterministeFiniteAutomataNode*> node_stack;
+	std::vector<const DeterministeFiniteAutomataNode*> node_history;
+
+	node_stack.push(&start_node);
+
+
+	while(!node_stack.empty()) {
+		const DeterministeFiniteAutomataNode* current_node = node_stack.top();
+		node_stack.pop();
+
+		for(const TokenSymbol* accepting_state : current_node->accepting_state()) {
+			if(std::find(std::begin(possible_accepting_token), std::end(possible_accepting_token), accepting_state) != std::end(possible_accepting_token))
+				return true;
+		}
+		for(auto& child_node : current_node->transitions()) {
+			if(std::find(std::begin(node_history), std::end(node_history), child_node.second) == std::end(node_history)) {
+				node_history.push_back(child_node.second);
+				node_stack.push(child_node.second);
+			}
+		}
+	}
+
+	return false;
 }
