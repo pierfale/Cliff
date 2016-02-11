@@ -32,24 +32,24 @@ void LexerGenerator::generate_lexer(const Syntax& ebnf_syntax, const AbstractSyn
 
 	}*/
 
-
+/*
 	std::cout << "Non Derterministe Finite Automata : " << std::endl;
 	nfa_start_node.print(std::cout);
 	std::cout << std::endl;
-
+*/
 
 
 	create_dfa(ebnf_syntax, nfa_start_node, dfa_start);
-	std::cout << "Derterministe Finite Automata : " << std::endl;
+	/*std::cout << "Derterministe Finite Automata : " << std::endl;
 	dfa_start.print(std::cout);
 	std::cout << std::endl;
-
+*/
 	reduce_dfa(ebnf_syntax, dfa_start);
-
+/*
 	std::cout << "Reduced Derterministe Finite Automata : " << std::endl;
 	dfa_start.print(std::cout);
 	std::cout << std::endl;
-
+*/
 	generate_lexer(output_syntax, dfa_start, lexer_state_list);
 }
 
@@ -304,8 +304,9 @@ bool LexerGenerator::is_equal_transition(const DeterministeFiniteAutomataNode* n
 		transition_2.push_back(transition.first);
 	}
 
-	return std::is_permutation(std::begin(transition_1), std::end(transition_1), std::begin(transition_2))
-		&& std::is_permutation(std::begin(node_1->accepting_state()), std::end(node_1->accepting_state()), std::begin(node_2->accepting_state()));
+	return transition_1.size() == transition_2.size() && node_1->accepting_state().size() == node_2->accepting_state().size()
+			&& std::is_permutation(std::begin(transition_1), std::end(transition_1), std::begin(transition_2))
+			&& std::is_permutation(std::begin(node_1->accepting_state()), std::end(node_1->accepting_state()), std::begin(node_2->accepting_state()));
 }
 
 void LexerGenerator::generate_lexer(Syntax& output_syntax, const DeterministeFiniteAutomataNode& start_node, std::vector<const DeterministeFiniteAutomataNode*>& lexer_state_list) {

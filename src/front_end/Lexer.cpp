@@ -33,6 +33,7 @@ bool Lexer::process_next(Syntax::State parser_state, Token& output) {
 				return true;
 			}
 
+			std::cout << "accept EOF." << std::endl;
 			output.set(_syntax.get_symbol_from_name(Syntax::EOF_symbol));
 			return false;
 		}

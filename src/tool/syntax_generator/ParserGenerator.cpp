@@ -12,7 +12,7 @@ void ParserGenerator::generate_parser(const Syntax& ebnf_syntax, Syntax& output_
 	closure_procedure(ebnf_syntax, output_syntax, syntax_representation, set_list.back());
 
 	construct_closure_set(ebnf_syntax, output_syntax, syntax_representation, set_list);
-
+/*
 	int cpt = 0;
 	for(const Set& set : set_list) {
 		std::cout << "====SET==== " << cpt++ << " (" << set.predecessor_set << ",\"" << (set.transition_symbol != nullptr ? set.transition_symbol->string() : "none") << "\"" << std::endl;
@@ -20,7 +20,7 @@ void ParserGenerator::generate_parser(const Syntax& ebnf_syntax, Syntax& output_
 			item.print(std::cout);
 		}
 	}
-
+*/
 
 	generate_parser(ebnf_syntax, output_syntax, syntax_representation, set_list, lexer_state_list);
 }

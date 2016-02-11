@@ -12,6 +12,8 @@ AbstractSyntaxTree& Parser::execute(MemoryContainer<AbstractSyntaxTree>& tree_me
 	std::stack<AbstractSyntaxTree*> tree_stack;
 	state_stack.push(Syntax::Parser_init_state);
 
+	TokenSymbol dummy_symbol("");
+
 	Token current_input;
 	_input.process_next(Syntax::Parser_init_state, current_input);
 
@@ -19,7 +21,6 @@ AbstractSyntaxTree& Parser::execute(MemoryContainer<AbstractSyntaxTree>& tree_me
 		if(state_stack.empty()) {
 			//error
 			std::cout << "end of stack" << std::endl;
-			std::exit(0);
 		}
 
 		Syntax::State current_state = state_stack.top();
@@ -46,9 +47,9 @@ AbstractSyntaxTree& Parser::execute(MemoryContainer<AbstractSyntaxTree>& tree_me
 
 			AbstractSyntaxTree* current_tree = nullptr;
 
-			TokenSymbol* tmp = new TokenSymbol("tmp..."); // TODO remove
+
 			if(next_action & Syntax::Parser_action_dummy_state_mask)
-				current_tree = &tree_memory.emplace(tree_memory, *tmp);
+				current_tree = &tree_memory.emplace(tree_memory, dummy_symbol);
 			else if(next_action & (Syntax::Parser_action_skip_state_mask | Syntax::Parser_action_replace_state_mask)) {
 				current_tree = tree_stack.top();
 				tree_stack.pop();

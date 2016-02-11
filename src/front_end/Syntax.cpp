@@ -22,6 +22,7 @@ Syntax::~Syntax() {
 	delete[] _lexer_table;
 	delete[] _lexer_accepting_state_table;
 	delete[] _action_table;
+	delete[] _reduce_number;
 	delete[] _goto_table;
 }
 
@@ -59,6 +60,10 @@ void Syntax::load(const char* filename) {
 	}
 
 	set_symbol_table(symbols_name, terminal_number);
+
+	for(unsigned int i=0; i<symbols_name.size(); i++) {
+		delete[] symbols_name[i];
+	}
 
 	uint32_t lexer_state_number;
 	file.read((char*)&lexer_state_number, sizeof(uint32_t));

@@ -326,8 +326,10 @@ void SyntaxGenerator::execute(ProgramOption::Iterator option_caller) {
 	rule_10_node.add_child(Token(token_symbol_rule_name, "whitespace"));
 	rule_10_node.add_child(token_symbol_unamed_terminal);
 	AbstractSyntaxTree& rule_10_re = rule_10_node.add_child(token_symbol_regular_expression);
+	AbstractSyntaxTree& rule_10_re_1 = rule_10_re.add_child(token_symbol_regular_expression_alternative);
 
-	rule_10_re.add_child(Token(token_symbol_regular_expression_letter, " "));
+	rule_10_re_1.add_child(Token(token_symbol_regular_expression_letter, " "));
+	rule_10_re_1.add_child(Token(token_symbol_regular_expression_letter, "\n"));
 
 	// all_char_expect_quote := #[^"]*#
 	AbstractSyntaxTree& rule_11_node = rule_list_node.add_child(token_symbol_rule);
