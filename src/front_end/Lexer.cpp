@@ -20,11 +20,14 @@ bool Lexer::process_next(Syntax::State parser_state, Token& output) {
 		}
 
 		if(current_letter == EOF) { // EOF
-			if(!_unaccepted_letter_buffer.empty()) {
+
+			if(_last_accepting_state_flags & Syntax::Lexer_accepting_state_ignore) {
+				_last_accepting_state = nullptr;
+			}
+			else if(!_unaccepted_letter_buffer.empty()) {
 				THROW(exception::Exception, "Lexer : Unrecognized word (end)"); // TODO better lexer eception
 			}
-
-			if(_last_accepting_state != nullptr) {
+			else if(_last_accepting_state != nullptr) {
 				std::string token_content;
 				token_content.insert(0, _accepted_letter_buffer.size(), _accepted_letter_buffer.front());
 				output.set(*_last_accepting_state, token_content.c_str());

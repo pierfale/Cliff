@@ -26,7 +26,6 @@ NonDeterministeFiniteAutomataNode& RegularExpressionRepresentation::construct(co
 				else if((*it_child)->children().size() == 3)
 					range += LetterRange((*it_child)->children()[0]->content()[0], (*it_child)->children()[2]->content()[0]);
 			}
-
 			return current_automata_node.create_output_node(range);
 		}
 		else if(std::strcmp(current_tree_node.children()[0]->content(), "[^") == 0) {

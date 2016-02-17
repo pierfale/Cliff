@@ -32,11 +32,11 @@ void LexerGenerator::generate_lexer(const Syntax& ebnf_syntax, const AbstractSyn
 
 	}*/
 
-/*
+
 	std::cout << "Non Derterministe Finite Automata : " << std::endl;
 	nfa_start_node.print(std::cout);
 	std::cout << std::endl;
-*/
+
 
 
 	create_dfa(ebnf_syntax, nfa_start_node, dfa_start);

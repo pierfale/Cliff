@@ -92,11 +92,18 @@ LetterRange& LetterRange::operator+=(const LetterRange& that) {
 
 	std::vector<std::pair<Letter, Letter>> new_range;
 
+	Letter start = 0x0;
+	Letter end = 0x0;
+
+
 	while(this_it != std::end(_range) && that_it != std::end(that._range)) {
+		start = std::min(this_it->first, that_it->first);
 		if(this_it->second < that_it->first) {
+			new_range.emplace_back(this_it->first, this_it->second);
 			++this_it;
 		}
 		else if(that_it->second < this_it->first) {
+			new_range.emplace_back(that_it->first, that_it->second);
 			++that_it;
 		}
 		else {
