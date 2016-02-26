@@ -9,7 +9,7 @@
 
 namespace cliff {
 
-	class TokenSymbol : public StaticHashString {
+    class TokenSymbol : public CopyHashString {
 
 	public:
 		TokenSymbol(const char* str);

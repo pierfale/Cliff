@@ -6,39 +6,14 @@ using namespace cliff;
 //	TokenSymbol
 //
 
-TokenSymbol::TokenSymbol(const char* str) : StaticHashString(str) {
+TokenSymbol::TokenSymbol(const char* str) : CopyHashString(str) {
 
 }
 
-TokenSymbol::TokenSymbol(TokenSymbol&& that) : StaticHashString(that._string) {
-	that._string = nullptr;
-	that._size = 0;
+TokenSymbol::TokenSymbol(TokenSymbol&& that) : CopyHashString(std::move(that._string)) {
+
 }
 
-TokenSymbol::~TokenSymbol() {
-	delete[] _string;
-}
-
-
-const char* TokenSymbol::string() const {
-	return _string;
-}
-
-unsigned int TokenSymbol::size() const {
-return _size;
-}
-
-bool TokenSymbol::operator==(const TokenSymbol& that) const {
-	return this == &that;
-}
-
-bool TokenSymbol::operator!=(const TokenSymbol& that) const {
-	return !operator==(that);
-}
-
-bool TokenSymbol::operator<(const TokenSymbol& that) const {
-	return this < &that;
-}
 //
 //	Token
 //

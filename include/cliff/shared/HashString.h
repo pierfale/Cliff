@@ -80,9 +80,16 @@ namespace cliff {
 
 	public:
 		CopyPointerArrayPolicy(T* array, unsigned int size) {
-			_ptr = new T[size];
-			std::copy(array, array+size, _ptr);
+            _ptr = new typename std::remove_const<T>::type[size];
+            _size = size;
+            move_mem(array, size);
 		}
+
+        CopyPointerArrayPolicy(CopyPointerArrayPolicy&& that) : _ptr(that._ptr), _size(that.size()) {
+            that._ptr = nullptr;
+            that._size = 0;
+        }
+
 
 		~CopyPointerArrayPolicy() {
 			delete[] _ptr;
@@ -93,11 +100,28 @@ namespace cliff {
 		}
 
 		const T* get() const {
-			return _ptr;
+            return _ptr;
 		}
 
+        unsigned int size() const {
+            return _size;
+        }
+
 	private:
-		T* _ptr;
+        template<class Q = T>
+        typename std::enable_if<std::is_scalar<Q>::value>::type
+        move_mem(T* array, unsigned int size) {
+            std::memcpy(_ptr, array, size*sizeof(T));
+        }
+
+        template<class Q = T>
+        typename std::enable_if<!std::is_scalar<Q>::value>::type
+        move_mem(T* array, unsigned int size) {
+             std::copy(array, array+size, _ptr);
+        }
+
+        typename std::remove_const<T>::type* _ptr;
+        unsigned int _size;
 
 	};
 
@@ -109,6 +133,22 @@ namespace cliff {
 		constexpr HashString(const char* str) : _string(str, std::strlen(str)+1), _hash(HashGenerator::execute(str)) {
 
 		}
+
+        HashString(HashString<PointerArrayPolicy>&& that) : _string(std::move(that._string)), _hash(std::move(that._hash)) {
+
+        }
+
+        const char* string() const {
+            return _string.get();
+        }
+
+        unsigned int size() const {
+            return _string.size();
+        }
+
+        Hash hash() const {
+            return _hash;
+        }
 
 		bool operator==(const HashString& that) {
 			return _hash = that._hash && std::strcmp(_string.get(), that._string.get()) == 0;
@@ -122,9 +162,8 @@ namespace cliff {
 			return _hash < that._hash || (_hash == that._hash && std::strcmp(_string.get(), that._string.get()) < 0);
 		}
 
-
-	private:
-		PointerArrayPolicy<const char*> _string;
+    protected:
+        PointerArrayPolicy<const char> _string;
 		Hash _hash;
 
 	};
