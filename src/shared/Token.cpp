@@ -6,16 +6,11 @@ using namespace cliff;
 //	TokenSymbol
 //
 
-TokenSymbol::TokenSymbol(const char* owner_string) : _string(nullptr), _size(std::strlen(owner_string)) {
-	_string = new char[_size+1];
-	std::memcpy(_string, owner_string, _size+1);
+TokenSymbol::TokenSymbol(const char* str) : StaticHashString(str) {
+
 }
 
-TokenSymbol::TokenSymbol(const char* owner_string, unsigned int size) : _string(new char[size+1]), _size(size)  {
-	std::memcpy(_string, owner_string, _size+1);
-}
-
-TokenSymbol::TokenSymbol(TokenSymbol&& that) : _string(that._string), _size(that._size) {
+TokenSymbol::TokenSymbol(TokenSymbol&& that) : StaticHashString(that._string) {
 	that._string = nullptr;
 	that._size = 0;
 }

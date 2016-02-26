@@ -5,26 +5,16 @@
 
 #include <iostream>
 
+#include "cliff/shared/HashString.h"
+
 namespace cliff {
 
-	class TokenSymbol {
+	class TokenSymbol : public StaticHashString {
 
 	public:
-		TokenSymbol(const char* owner_string);
-		TokenSymbol(const char* owner_string, unsigned int size);
+		TokenSymbol(const char* str);
 		TokenSymbol(const TokenSymbol& that) = delete;
 		TokenSymbol(TokenSymbol&& that);
-		~TokenSymbol();
-
-		const char* string() const;
-		unsigned int size() const;
-
-		bool operator==(const TokenSymbol& that) const;
-		bool operator!=(const TokenSymbol& that) const;
-		bool operator<(const TokenSymbol& that) const;
-	private:
-		char* _string;
-		unsigned int _size;
 	};
 
 	class Token {

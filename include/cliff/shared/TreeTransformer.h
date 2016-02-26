@@ -2,28 +2,33 @@
 #define _CLIFF_TREE_TRANSFORMER_H
 
 #include "cliff/shared/AbstractSyntaxTree.h"
+#include "cliff/shared/Exception.h"
+#include "cliff/shared/TreeComparatorMapper.h"
 
 namespace cliff {
 
 	class TreeTransformer {
 
 	public:
-		class Handler {
 
-		public:
+		typedef bool(*FilterFunction)(const TreeComparatorMapper<unsigned int>::Handler&);
 
-			Handler(const AbstractSyntaxTree& tree_root);
-
-			Handler& on_node_of_type(const TokenSymbol& symbol, void(*)(const AbstractSyntaxTree&), bool(*)(const AbstractSyntaxTree&, unsigned int));
-
-			void execute();
-
+		enum Action {
+			None,
+			Remove_recursive,
+			Ascend
 		};
 
-		static Handler transform(const AbstractSyntaxTree& tree_root);
+		TreeTransformer();
 
-		static bool browse_all_children(const AbstractSyntaxTree&, unsigned int);
+		void add_rule(FilterFunction filter, Action action);
 
+		AbstractSyntaxTree* execute(const AbstractSyntaxTree& tree_root, MemoryContainer<AbstractSyntaxTree>& output_container);
+
+	private:
+		AbstractSyntaxTree* _execute(const AbstractSyntaxTree& tree_root, MemoryContainer<AbstractSyntaxTree>& output_container, AbstractSyntaxTree* parent_node);
+
+		std::vector<std::pair<FilterFunction, Action>> _rules;
 	};
 
 }

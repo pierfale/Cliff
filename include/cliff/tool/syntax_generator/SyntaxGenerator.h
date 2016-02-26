@@ -1,5 +1,5 @@
-#ifndef _CLIFF_SYNTAX_GENERATOR_H
-#define _CLIFF_SYNTAX_GENERATOR_H
+#ifndef _CLIFF_SYNTAX_GENERATOR_SYNTAX_GENERATOR_H
+#define _CLIFF_SYNTAX_GENERATOR_SYNTAX_GENERATOR_H
 
 #include <iostream>
 #include <fstream>
@@ -14,9 +14,12 @@
 #include "cliff/front_end/Parser.h"
 #include "cliff/front_end/Reader.h"
 #include "cliff/shared/AbstractSyntaxTree.h"
+#include "cliff/shared/TreeComparatorOnline.h"
+#include "cliff/shared/TreeTransformer.h"
 #include "cliff/tool/syntax_generator/LexerGenerator.h"
 #include "cliff/tool/syntax_generator/ParserGenerator.h"
 #include "cliff/tool/syntax_generator/SyntaxRepresentation.h"
+#include "cliff/tool/syntax_generator/SyntaxReader.h"
 
 namespace cliff {
 

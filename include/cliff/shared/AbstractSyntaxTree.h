@@ -27,6 +27,8 @@ public:
 	bool is_leaf() const;
 	const TokenSymbol& type() const;
 	const char* content() const;
+	Token& token();
+	const Token& token() const;
 	const std::vector<AbstractSyntaxTree*>& children() const;
 
 	void print(std::ostream& stream) const;

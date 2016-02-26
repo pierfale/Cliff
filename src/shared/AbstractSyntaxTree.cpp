@@ -51,6 +51,14 @@ const char* AbstractSyntaxTree::content() const {
 	return _token.content();
 }
 
+Token& AbstractSyntaxTree::token() {
+	return _token;
+}
+
+const Token& AbstractSyntaxTree::token() const {
+	return _token;
+}
+
 const std::vector<AbstractSyntaxTree*>& AbstractSyntaxTree::children() const {
 	return _children;
 }

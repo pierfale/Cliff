@@ -11,20 +11,12 @@ void SyntaxGenerator::execute(ProgramOption::Iterator option_caller) {
 	std::string error_message_cmd("Option -gs (--generate-syntax) require syntax filename : -gs [filename]");
 	const char* filename = option_caller.next_argument_or_else(error_message_cmd).require_text_argument_or_else(error_message_cmd);
 
-	std::cout << "filename = " << filename << std::endl;
-
-    Syntax syntax;
-	syntax.load("syntax.bin");
-	Reader reader(filename);
-	Lexer lexer(syntax, reader);
-	Parser parser(syntax, lexer);
-
-
-	MemoryContainer<AbstractSyntaxTree> ast_memory;
-	AbstractSyntaxTree& root = parser.execute(ast_memory);
+	Syntax syntax;
+	MemoryContainer<AbstractSyntaxTree> abstract_syntax_tree_container;
+	AbstractSyntaxTree& abstract_syntax_tree_root = SyntaxReader::execute(filename, syntax, abstract_syntax_tree_container);
 
 	std::cout << "Abstract Syntax Tree : " << std::endl;
-	root.print(std::cout);
+	abstract_syntax_tree_root.print(std::cout);
 	std::cout << std::endl;
 
 	//
