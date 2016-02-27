@@ -64,7 +64,7 @@ bool Lexer::process_next(Syntax::State parser_state, Token& output) {
 
 			if(!(_last_accepting_state_flags & Syntax::Lexer_accepting_state_ignore)) {
 				output.set(*_last_accepting_state, token_content.c_str());
-
+std::cout << _last_accepting_state->string() << " : " << token_content.c_str() << std::endl;
 				_last_accepting_state = nullptr;
 				_current_state = Syntax::Lexer_init_state;
 

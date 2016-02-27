@@ -49,7 +49,7 @@ namespace cliff {
 
 	private:
 		class Mapper {
-			std::map<StaticHashString, Mapper*> _list;
+			std::map<CopyHashString, Mapper*> _list;
 			Mapper* _others;
 			T& _value;
 		};

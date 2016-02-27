@@ -79,8 +79,10 @@ namespace cliff {
 	class CopyPointerArrayPolicy {
 
 	public:
+		typedef typename std::remove_const<T>::type TNonConst;
+
 		CopyPointerArrayPolicy(T* array, unsigned int size) {
-            _ptr = new typename std::remove_const<T>::type[size];
+			_ptr = new TNonConst[size];
             _size = size;
             move_mem(array, size);
 		}
@@ -120,7 +122,7 @@ namespace cliff {
              std::copy(array, array+size, _ptr);
         }
 
-        typename std::remove_const<T>::type* _ptr;
+		TNonConst* _ptr;
         unsigned int _size;
 
 	};
@@ -143,27 +145,27 @@ namespace cliff {
         }
 
         unsigned int size() const {
-            return _string.size();
+			return _string.size()-1;
         }
 
         Hash hash() const {
             return _hash;
         }
 
-		bool operator==(const HashString& that) {
-			return _hash = that._hash && std::strcmp(_string.get(), that._string.get()) == 0;
+		bool operator==(const HashString& that) const {
+			return _hash == that._hash && std::strcmp(_string.get(), that._string.get()) == 0;
 		}
 
-		bool operator!=(const HashString& that) {
+		bool operator!=(const HashString& that) const {
 			return _hash != that._hash || std::strcmp(_string.get(), that._string.get()) != 0;
 		}
 
-		bool operator<(const HashString& that) {
+		bool operator<(const HashString& that) const {
 			return _hash < that._hash || (_hash == that._hash && std::strcmp(_string.get(), that._string.get()) < 0);
 		}
 
     protected:
-        PointerArrayPolicy<const char> _string;
+		PointerArrayPolicy<const char> _string;
 		Hash _hash;
 
 	};

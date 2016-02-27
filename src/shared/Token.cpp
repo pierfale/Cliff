@@ -10,7 +10,7 @@ TokenSymbol::TokenSymbol(const char* str) : CopyHashString(str) {
 
 }
 
-TokenSymbol::TokenSymbol(TokenSymbol&& that) : CopyHashString(std::move(that._string)) {
+TokenSymbol::TokenSymbol(TokenSymbol&& that) : CopyHashString(std::move(that)) {
 
 }
 

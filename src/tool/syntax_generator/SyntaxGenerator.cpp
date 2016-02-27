@@ -19,6 +19,8 @@ void SyntaxGenerator::execute(ProgramOption::Iterator option_caller) {
 	abstract_syntax_tree_root.print(std::cout);
 	std::cout << std::endl;
 
+	return;
+
 	//
 	//	TMP
 	//
@@ -532,19 +534,6 @@ void SyntaxGenerator::create_syntax(const Syntax& ebnf_syntax, const AbstractSyn
 	ParserGenerator::generate_parser(ebnf_syntax, generated_syntax, syntax_representation, lexer_state_list);
 
 	generated_syntax.save("syntax.bin");
-
-/*
-	Graphe root_node;
-
-	std::vector<TokenSymbol>& token_symbol_table = ebnf_syntax.token_symbol_list();
-	for(auto it_token_symbol = std::begin(token_symbol_table); it != std::begin(token_symbol_table); ++it) {
-		if(root_node.has_edge_label((*it_token_symbol)[0])) {
-
-		}
-		else {
-			root_node.add_mode_with_edge_label((*it_token_symbol)[0]);
-		}
-	}*/
 
 }
 

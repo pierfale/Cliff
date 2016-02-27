@@ -128,6 +128,10 @@ void Syntax::save(const char* filename) {
 	file.write((char*)_lexer_accepting_state_table, _lexer_state_number*_parser_state_number*sizeof(Index));
 
 	file.close();
+
+	std::cout << "save syntax \"" << filename << "\"" << std::endl;
+	std::cout << _symbol_number << " symbols (" << _symbol_non_terminal_start << " T, " << (_symbol_number-_symbol_non_terminal_start) << " NT)" << std::endl;
+	std::cout << _lexer_state_number << " lexer states, " << _parser_state_number << " parsers states (+" << _parser_dummy_rule_number << " dummy states)" << std::endl;
 }
 
 //
