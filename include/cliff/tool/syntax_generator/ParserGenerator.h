@@ -37,9 +37,9 @@ namespace cliff {
 			}
 
 			bool operator<(const Item& that) const {
-				return rule < that.rule ||
-						(rule == that.rule && cursor < that.cursor ||
-						(cursor == that.cursor && next_token < that.next_token));
+				return rule < that.rule || (rule == that.rule
+						&& (cursor < that.cursor || (cursor == that.cursor
+						&& (next_token < that.next_token))));
 			}
 
 			void following_symbols(std::vector<std::pair<SyntaxRepresentation::Symbol, bool>>& output) const {
@@ -85,6 +85,7 @@ namespace cliff {
 			}
 
 			void erase_duplicate() {
+				//std::cout << item_list.size() << std::endl;
 				std::sort(std::begin(item_list), std::end(item_list));
 				item_list.erase(std::unique(std::begin(item_list), std::end(item_list)), std::end(item_list));
 			}

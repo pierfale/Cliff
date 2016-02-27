@@ -10,7 +10,7 @@ const Syntax::Index Syntax::Parser_unaccepting_state = 0xFFFFFFFF;
 
 Syntax::Syntax() : _symbol_number(0), _symbol_non_terminal_start(0), _symbol_table(nullptr),
 	_lexer_state_number(0), _lexer_table(nullptr), _lexer_accepting_state_table(nullptr),
-	_parser_state_number(0), _parser_dummy_rule_number(0), _action_table(nullptr), _goto_table(nullptr) {
+	_parser_state_number(0), _parser_dummy_rule_number(0), _action_table(nullptr), _reduce_number(nullptr), _goto_table(nullptr) {
 
 }
 
