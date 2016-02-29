@@ -41,7 +41,7 @@ bool Lexer::process_next(Syntax::State parser_state, Token& output) {
 		_unaccepted_letter_buffer.push(current_letter);
 		_current_state = _syntax.next_lexer_state(_current_state, current_letter);
 
-		if(_syntax.is_disabled_path(_current_state, parser_state)) {
+		if(_current_state != Syntax::Lexer_state_error && _syntax.is_disabled_path(_current_state, parser_state)) {
 			_current_state = Syntax::Lexer_state_error;
 		}
 

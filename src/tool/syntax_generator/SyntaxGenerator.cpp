@@ -13,14 +13,12 @@ void SyntaxGenerator::execute(ProgramOption::Iterator option_caller) {
 
 	Syntax syntax;
 	MemoryContainer<AbstractSyntaxTree> abstract_syntax_tree_container;
-/*	AbstractSyntaxTree& abstract_syntax_tree_root = SyntaxReader::execute(filename, syntax, abstract_syntax_tree_container);
+	AbstractSyntaxTree& abstract_syntax_tree_root = SyntaxReader::execute(filename, syntax, abstract_syntax_tree_container);
 
 	std::cout << "Abstract Syntax Tree : " << std::endl;
 	abstract_syntax_tree_root.print(std::cout);
 	std::cout << std::endl;
 
-	return;
-*/
 	//
 	//	TMP
 	//
