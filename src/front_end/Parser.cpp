@@ -26,8 +26,9 @@ AbstractSyntaxTree& Parser::execute(MemoryContainer<AbstractSyntaxTree>& tree_me
 		Syntax::State current_state = state_stack.top();
 
 		Syntax::Index next_action = _syntax.next_parser_action(current_state, current_input.type());
-		if(next_action == Syntax::Parser_unaccepting_state)
+        if(next_action == Syntax::Parser_unaccepting_state) {
 			THROW(exception::Exception, "Parser : Unrecognized input");
+        }
 
 		if(next_action & Syntax::Parser_action_reduce_mask) {
 			unsigned int n_child = _syntax.parser_reduce_number(current_state, current_input.type())

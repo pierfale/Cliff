@@ -12,7 +12,7 @@ void SyntaxGenerator::execute(ProgramOption::Iterator option_caller) {
 	const char* filename = option_caller.next_argument_or_else(error_message_cmd).require_text_argument_or_else(error_message_cmd);
 
 	Syntax syntax;
-	MemoryContainer<AbstractSyntaxTree> abstract_syntax_tree_container;
+    MemoryContainer<AbstractSyntaxTree> abstract_syntax_tree_container;
 	AbstractSyntaxTree& abstract_syntax_tree_root = SyntaxReader::execute(filename, syntax, abstract_syntax_tree_container);
 
 	std::cout << "Abstract Syntax Tree : " << std::endl;

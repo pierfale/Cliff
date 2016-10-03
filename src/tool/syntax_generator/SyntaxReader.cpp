@@ -11,9 +11,9 @@ AbstractSyntaxTree& SyntaxReader::execute(const char* filename, Syntax& syntax, 
 	Parser parser(syntax, lexer);
 
 
+
 	MemoryContainer<AbstractSyntaxTree> ast_memory;
 	AbstractSyntaxTree& syntax_tree_root = parser.execute(ast_memory);
-
 	TreeTransformer ebnf_tree_transformer;
 /*
 	ebnf_tree_transformer.add_rule([](const AbstractSyntaxTree& current_node) {

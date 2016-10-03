@@ -27,6 +27,7 @@ namespace cliff {
 		public:
 			Exception();
 			Exception(const std::string& message);
+            Exception(const char* message);
 			void set_context(const char* file, const char* function, unsigned int line, const char* exception_type) throw ();
 			void set_message(const std::string& message) throw ();
 
