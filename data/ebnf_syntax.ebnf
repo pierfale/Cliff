@@ -1,5 +1,37 @@
-grammar := rule*;
+grammar 			:= (rule ";")*;
 
-rule := identifier ":=" rule_alternative;
+rule 				:= identifier ":=" regular_expression 
+				|  identifier ":=" rule_alternative;
 
-identifier := #[a-zA-Z_][0-9a-zA-Z_]*#;  
+rule_alternative		:= rule_sequence 
+				|  rule_alternative "|" rule_sequence;
+
+rule_sequence			:= rule_quantifier*;
+
+rule_quantifier			:= rule_unit 
+				|  rule_unit "*" 
+				|  rule_unit "+" 
+				|  rule_unit "?";
+
+rule_unit			:= string_literal 
+				|  identifier 
+				|  "(" rule_alternative ")";
+
+regular_expression 		:= "#" regular_expression_block* "#";
+
+regular_expression_block	:= regular_expression_letter regular_expression_quantifier? 
+				|  regular_expression_range regular_expression_quantifier?;
+
+regular_expression_range 	:= "[" regular_expression_range_block* "]";
+
+regular_expression_range_block 	:= regular_expression_letter 
+				| regular_expression_letter "-" regular_expression_letter;
+
+regular_expression_quantifier 	:= "+" 
+				|  "*" 
+				|  "?" 
+				|  "{" digit "," digit "}";
+
+regular_expression_letter 	:= #[^\[\]\#\+\*\?\-]#;
+
+identifier 			:= #[a-zA-Z_][0-9a-zA-Z_]*#;

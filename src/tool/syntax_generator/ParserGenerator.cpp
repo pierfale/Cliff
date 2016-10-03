@@ -239,7 +239,7 @@ void ParserGenerator::generate_parser(const Syntax& ebnf_syntax, Syntax& output_
 						Syntax::Parser_action_shift_mask | j
 						| ((item.rule->flags() & SyntaxRepresentation::ListReduce) && item.cursor > 0 && syntax_representation.is_dummy_symbol_value(item.rule->sequence()[item.cursor-1].content()) ? Syntax::Parser_action_replace_state_mask : 0),
 						0,
-						exception::UserMessage(exception::UserMessage::Error, "Parser : shift/reduce conflict"));
+						exception::UserMessage(exception::UserMessage::Error, std::string("Parser : shift/reduce conflict (symbol : \"")+item.rule->sequence()[item.cursor].content().string()+std::string("\", rule : \"")+item.rule->rule_name().string()+std::string("\")")));
 
 				accept_token_list.push_back(&item.rule->sequence()[item.cursor].content());
 
