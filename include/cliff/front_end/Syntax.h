@@ -4,6 +4,7 @@
 #include <map>
 #include <vector>
 #include <fstream>
+#include <algorithm>
 
 #include "cliff/shared/Token.h"
 #include "cliff/shared/Exception.h"
@@ -56,6 +57,9 @@ namespace cliff {
 		//
 		// Symbol
 		//
+		void get_symbol_list(std::vector<std::pair<const char*, bool>>& output_symbols) const;
+		void set_symbol_list(const std::vector<std::pair<const char*, bool>>& input_symbols);
+
 		void set_symbol_table(std::vector<const char*> symbols, unsigned int terminal_range);
 		const TokenSymbol& get_symbol_from_name(const char* symbol_name) const;
 		const TokenSymbol& get_symbol_from_name_or_else(const char* symbol_name, const exception::UserMessage& message) const;

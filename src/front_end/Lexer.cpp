@@ -47,7 +47,25 @@ bool Lexer::process_next(Syntax::State parser_state, Token& output) {
 
 
 		if(_current_state == Syntax::Lexer_state_error && _last_accepting_state == nullptr) {
-			THROW(exception::Exception, "Lexer : Unrecognized word"); // TODO better lexer eception
+			std::stringstream ss1;
+			ss1 << std::showbase << std::uppercase << std::setfill('0') << std::setw(4) << std::hex << (int)current_letter;
+			std::string current_letter_str = ss1.str();
+			std::stringstream ss2;
+			ss2 << (_input.current_line()+1);
+			std::string current_line_str = ss2.str();
+			ss2.str("");
+			ss2.clear();
+			ss2 << (_input.current_column()+1);
+			std::string current_column_str = ss2.str();
+
+			THROW(exception::Exception,
+				  std::string("Lexer : Unrecognized word (i: \"")+
+				  current_letter_str+std::string("\", c: \"")+(char)current_letter+std::string("\") [file: ")
+				  +_input.current_filename()+
+				  std::string(", line: ") +current_line_str+
+				  std::string(", column: ") +current_column_str+
+				  std::string("]")
+				  ); // TODO better lexer eception
 		}
 		else if(_current_state == Syntax::Lexer_state_error) {
 			std::string token_content;
@@ -64,7 +82,7 @@ bool Lexer::process_next(Syntax::State parser_state, Token& output) {
 
 			if(!(_last_accepting_state_flags & Syntax::Lexer_accepting_state_ignore)) {
 				output.set(*_last_accepting_state, token_content.c_str());
-std::cout << _last_accepting_state->string() << " : " << token_content.c_str() << std::endl;
+				std::cout << _last_accepting_state->string() << " : " << token_content.c_str() << std::endl;
 				_last_accepting_state = nullptr;
 				_current_state = Syntax::Lexer_init_state;
 

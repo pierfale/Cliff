@@ -63,6 +63,10 @@ const std::vector<AbstractSyntaxTree*>& AbstractSyntaxTree::children() const {
 	return _children;
 }
 
+std::vector<AbstractSyntaxTree*>& AbstractSyntaxTree::children() {
+	return _children;
+}
+
 void AbstractSyntaxTree::print(std::ostream& stream) const {
 	_print(stream, 0);
 }

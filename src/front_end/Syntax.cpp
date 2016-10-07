@@ -150,6 +150,31 @@ void Syntax::set_symbol_table(std::vector<const char*> symbols, unsigned int ter
 	}
 }
 
+void Syntax::get_symbol_list(std::vector<std::pair<const char*, bool>>& output_symbols) const {
+	for(unsigned int i = 0; i<_symbol_number; i++) {
+		output_symbols.push_back(std::make_pair(_symbol_table[i].string(), i < _symbol_non_terminal_start));
+	}
+}
+
+void Syntax::set_symbol_list(const std::vector<std::pair<const char*, bool>>& input_symbols) {
+	std::vector<std::pair<const char*, bool>> symbol_list(input_symbols);
+
+	std::sort(std::begin(symbol_list), std::end(symbol_list), [](std::pair<const char*, bool> symbol_1, std::pair<const char*, bool> symbol_2) {
+		return symbol_1.second != symbol_2.second ? symbol_1.second: std::strcmp(symbol_1.first, symbol_2.first) <= 0; });
+
+	symbol_list.erase(std::unique(std::begin(symbol_list), std::end(symbol_list), [](std::pair<const char*, bool> symbol_1, std::pair<const char*, bool> symbol_2) {
+		return symbol_1.second == symbol_2.second && std::strcmp(symbol_1.first, symbol_2.first) == 0; }), std::end(symbol_list));
+
+	std::vector<const char*> ordered_symbols_name;
+	ordered_symbols_name.resize(symbol_list.size());
+	std::transform(std::begin(symbol_list), std::end(symbol_list), std::begin(ordered_symbols_name), [](std::pair<const char*, bool> symbol) {return symbol.first;});
+
+
+	unsigned int terminal_number = std::count_if(std::begin(symbol_list), std::end(symbol_list),  [](std::pair<const char*, bool> symbol) -> bool {return symbol.second;});
+
+	set_symbol_table(ordered_symbols_name, terminal_number);
+}
+
 const TokenSymbol& Syntax::get_symbol_from_name(const char* symbol_name) const {
 	auto it = _symbols_index.find(symbol_name);
 	if(it == std::end(_symbols_index)) {

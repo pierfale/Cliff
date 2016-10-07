@@ -6,6 +6,7 @@
 #include <queue>
 
 #include <iostream>
+#include <iomanip>
 
 #include "cliff/shared/Exception.h"
 #include "cliff/front_end/Syntax.h"

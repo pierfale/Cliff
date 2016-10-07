@@ -29,7 +29,9 @@ public:
 	const char* content() const;
 	Token& token();
 	const Token& token() const;
+
 	const std::vector<AbstractSyntaxTree*>& children() const;
+	std::vector<AbstractSyntaxTree*>& children();
 
 	void print(std::ostream& stream) const;
 
