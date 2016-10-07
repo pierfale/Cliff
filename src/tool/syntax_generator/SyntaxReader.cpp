@@ -69,13 +69,13 @@ AbstractSyntaxTree& SyntaxReader::execute(const char* filename, Syntax& syntax, 
 	ebnf_tree_transformer.add_rule(TreePatternMatching::of_type("rule"), [](TreeTransformer::Context& context) {
 		std::cout << "#" << context.node().token().type().string() << (context.node().token().content() != nullptr ? context.node().token().content() : "") << std::endl;
 
-		context.child_at_position(0).replace_node(context.syntax().get_symbol_from_name("rule_name"));
+		context.child_at_position(0).replace_node("rule_name");
 		/*
 		transformer.remove_child(1);
 		transformer.recurse_child(2);*/
 	});
 
-	return *ebnf_tree_transformer.execute(input_syntax, syntax, syntax_tree_root, output_container);
+	return ebnf_tree_transformer.execute(input_syntax, syntax, syntax_tree_root, output_container);
 
 /*
 	ebnf_tree_transformer.add_rule(TreeTransformer::of_type("string_literal"), [](TreeTransformerContext& transformer,  AbstractSyntaxTree* current_node) {
