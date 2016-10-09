@@ -22,14 +22,16 @@ Token::Token() : _type(nullptr), _content(nullptr) {
 
 }
 
-Token::Token(const TokenSymbol& type) : _type(&type), _content(nullptr) {
+Token::Token(const TokenSymbol& type) : Token(type, nullptr) {
 
 }
 
 Token::Token(const TokenSymbol& type, const char* owner_content) : _type(&type), _content(nullptr) {
-	unsigned int size = std::strlen(owner_content);
-	_content = new char[size+1];
-	memcpy(_content, owner_content, size+1);
+	if(owner_content != nullptr) {
+		unsigned int size = std::strlen(owner_content);
+		_content = new char[size+1];
+		memcpy(_content, owner_content, size+1);
+	}
 }
 
 Token::Token(const Token& that) : _type(that._type), _content(nullptr) {

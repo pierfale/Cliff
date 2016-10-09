@@ -21,61 +21,35 @@ AbstractSyntaxTree& SyntaxReader::execute(const char* filename, Syntax& syntax, 
 	ebnf_tree_transformer.add_symbol("rule_terminal", false);
 	ebnf_tree_transformer.add_symbol("rule_non_terminal", false);
 
-
-	/*Syntax transformed_syntax(syntax);
-	syntax.add_symbol("rule_terminal");
-	syntax.add_symbol("rule_non_terminal");*/
-
-
-/*
-	ebnf_tree_transformer.add_rule([](const AbstractSyntaxTree& current_node) {
-		TreeComparator comparator;
-		return comparator.match_with(current_node).of_type("string_literal");
-	}, [](TreeTransformerContext& transformer,  AbstractSyntaxTree* current_node) -> AbstractSyntaxTree* {
-		//transformer.recurse();
-
-		std::string string_content;
-		transformer.foreach_children(TreeTransformer::of_type("string_literal_letter"), [string_content&](TreeTransformerContext& transformer,  AbstractSyntaxTree* current_node) {
-			string_content += transformer.map_children(TreeTransformer::all(), [](TreeTransformerContext& transformer,  AbstractSyntaxTree* current_node) {
-				if(current_node->type() == syntax.get_symbol_from_name("string_literal_letter_authorized")) {
-					return current_node->content();
-				}
-				else if(current_node->type() == syntax.get_symbol_from_name("string_literal_letter_protected")) {
-					return current_node->content().substr(1);
-				}
-				else {
-					return "";
-				}
-
-			});
-		});
-
-
-		parent_node.add_child(syntax.get_symbol_from_name("rule_terminal"), string_content);
-
-	});
-
-	ebnf_tree_transformer.add_rule(TreeTransformer::of_type("string_literal"), TreeTransformer::Action::ascend_child(1), true);
-
-	ebnf_tree_transformer.add_rule(TreeTransformer::of_type("string_literal_letter"), TreeTransformer::Action::ascend_children, true);
-	ebnf_tree_transformer.add_rule(TreeTransformer::of_type("string_literal_letter_authorized"), TreeTransformer::Action::ascend_children, true);
-	ebnf_tree_transformer.add_rule(TreeTransformer::of_type("string_literal_letter_protected"), [](TreeTransformerContext& transformer,  AbstractSyntaxTree* current_node) {
-		return 	current_node->transform()
-	}, true);*/
-
-	/*
-	 * 3
-	 */
 	ebnf_tree_transformer.add_rule(TreePatternMatching::of_type("rule"), [](TreeTransformer::Context& context) {
-		std::cout << "#" << context.node().token().type().string() << (context.node().token().content() != nullptr ? context.node().token().content() : "") << std::endl;
-
 		context.child_at_position(0).replace_node("rule_name");
-		/*
-		transformer.remove_child(1);
-		transformer.recurse_child(2);*/
+		context.child_at_position(1).remove();
+		//transformer.recurse_child(2);
 	});
 
-	return ebnf_tree_transformer.execute(input_syntax, syntax, syntax_tree_root, output_container);
+	ebnf_tree_transformer.add_rule(TreePatternMatching::of_type("string_literal_letter_authorized"), [](TreeTransformer::Context& context) {
+		context.set("content", context.node().token().content());
+	});
+
+	ebnf_tree_transformer.add_rule(TreePatternMatching::of_type("string_literal_letter_protected"), [](TreeTransformer::Context& context) {
+		context.set("content", context.child_at_position(0).node().token().content()+1);
+	});
+
+	ebnf_tree_transformer.add_rule(TreePatternMatching::of_type("string_literal_letter"), [](TreeTransformer::Context& context) {
+		context.set("content", context.child_at_position(0).get<const char>("content"));
+	});
+
+	ebnf_tree_transformer.add_rule(TreePatternMatching::of_type("string_literal"), [](TreeTransformer::Context& context) {
+		std::vector<TreeTransformer::Context*> context_list;
+		context.children_filter(TreePatternMatching::of_type("string_literal_letter"), context_list);
+		context.replace_node("rule_terminal", std::accumulate(std::begin(context_list), std::end(context_list), std::string(), [](std::string content, TreeTransformer::Context* c) {
+			const char* c2 = c->get<const char>("content");
+			return c2 != nullptr ? content+c2 : content;
+		}));
+		context.remove_all_children();
+	});
+
+	return *ebnf_tree_transformer.execute(input_syntax, syntax, syntax_tree_root, output_container); // todo case of nullptr
 
 /*
 	ebnf_tree_transformer.add_rule(TreeTransformer::of_type("string_literal"), [](TreeTransformerContext& transformer,  AbstractSyntaxTree* current_node) {

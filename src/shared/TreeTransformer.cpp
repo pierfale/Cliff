@@ -3,7 +3,7 @@
 using namespace cliff;
 
 
-TreeTransformer::TreeTransformer() {
+TreeTransformer::TreeTransformer() : _output_syntax(nullptr) {
 
 }
 
@@ -15,10 +15,11 @@ void TreeTransformer::add_symbol(const char* symbol_str, bool is_terminal) {
 	_symbol_transformation.push_back(std::make_tuple(symbol_str, is_terminal, SymbolAction::ADD));
 }
 
-AbstractSyntaxTree& TreeTransformer::execute(const Syntax& input_syntax, Syntax& output_syntax, const AbstractSyntaxTree& input_tree, MemoryContainer<AbstractSyntaxTree>& output_container) {
+AbstractSyntaxTree* TreeTransformer::execute(const Syntax& input_syntax, Syntax& output_syntax, const AbstractSyntaxTree& input_tree, MemoryContainer<AbstractSyntaxTree>& output_container) {
 	//
 	//	Convert Syntax
 	//
+	_output_syntax = &output_syntax;
 	std::vector<std::pair<const char*, bool>> symbol_list;
 	input_syntax.get_symbol_list(symbol_list);
 
@@ -40,68 +41,28 @@ AbstractSyntaxTree& TreeTransformer::execute(const Syntax& input_syntax, Syntax&
 	output_syntax.set_symbol_list(symbol_list);
 
 	//AbstractSyntaxTree& output_tree_root = output_container.emplace(input_tree.token()); // TODO use output_syntax symbols
-	return _execute(output_syntax, input_tree, nullptr, output_container);
+	return _execute(output_syntax, input_tree, nullptr, output_container, false);
 }
 
-AbstractSyntaxTree& TreeTransformer::_execute(const Syntax& syntax, const AbstractSyntaxTree& current_input_node, AbstractSyntaxTree* parent_node,  MemoryContainer<AbstractSyntaxTree>& output_container) {
+AbstractSyntaxTree* TreeTransformer::_execute(const Syntax& syntax, const AbstractSyntaxTree& current_input_node, AbstractSyntaxTree* parent_node,  MemoryContainer<AbstractSyntaxTree>& output_container, bool deleted) {
 
-	auto context_it = _delegate_context.find(&current_input_node);
+	Context& context = _get_or_create_context(&current_input_node);
 
-	if(context_it == std::end(_delegate_context)) {
-		context_it = _delegate_context.emplace(std::piecewise_construct, std::forward_as_tuple(&current_input_node), std::forward_as_tuple(*this, current_input_node)).first;
+	AbstractSyntaxTree* new_node = nullptr;
+
+	bool node_deleted = deleted ? true : context._to_be_deleted;
+
+	if(!node_deleted) {
+		new_node = parent_node == nullptr ?
+							&output_container.emplace(output_container, context._create()) :
+							&parent_node->add_child(context._create());
 	}
-
-
-	for(std::pair<TreePatternMatching::Handle, ActionFunction>& rule : _rules) {
-		if(rule.first.match_with(current_input_node)) {
-			rule.second(context_it->second);
-			break;
-		}
-	}
-
-	AbstractSyntaxTree& new_node = parent_node == nullptr ?
-				output_container.emplace(output_container, context_it->second._create()) :
-				parent_node->add_child(context_it->second._create());
 
 	for(AbstractSyntaxTree* child : current_input_node.children()) {
-		_execute(syntax, *child, &new_node, output_container);
+		_execute(syntax, *child, new_node, output_container, node_deleted);
 	}
 
 	return new_node;
-
-
-	/*
-	for(std::pair<FilterFunction, Action>& rule : _rules) {
-		if(rule.first(tree_root)) {
-			action = rule.second;
-			break;
-		}
-	}*/
-/*
-	switch(action) {
-
-	case Remove_recursive:
-		break;
-	case Ascend:
-		if(parent_node == nullptr && tree_root.children().size() > 1)
-			THROW(exception::Exception, "TreeTransformer : parent node null");
-		break;
-
-		for(AbstractSyntaxTree* child : tree_root.children())
-			_execute(*child, output_container, parent_node);
-
-		return parent_node;
-	case None:
-		AbstractSyntaxTree& new_tree = parent_node == nullptr ? output_container.emplace(output_container, tree_root.token()) : parent_node->add_child(tree_root.token());
-
-		for(AbstractSyntaxTree* child : tree_root.children())
-			_execute(*child, output_container, &new_tree);
-
-		return &new_tree;
-	}
-
-	return nullptr;
-	*/
 }
 
 //
@@ -120,6 +81,22 @@ AbstractSyntaxTree* TreeTransformer::Action::ascend_children(AbstractSyntaxTree*
 
 }
 
+TreeTransformer::Context& TreeTransformer::_get_or_create_context(const AbstractSyntaxTree* node) {
+	auto context_it = _delegate_context.find(node);
+
+	if(context_it == std::end(_delegate_context)) {
+		context_it = _delegate_context.emplace(std::piecewise_construct, std::forward_as_tuple(node), std::forward_as_tuple(*this, *node)).first;
+
+		for(std::pair<TreePatternMatching::Handle, ActionFunction>& rule : _rules) {
+			if(rule.first.match_with(*node)) {
+				rule.second(context_it->second);
+			}
+		}
+	}
+
+	return context_it->second;
+}
+
 //
 //	Context
 //
@@ -132,22 +109,25 @@ const AbstractSyntaxTree& TreeTransformer::Context::node() const {
 	return _input_node;
 }
 
-TreeTransformer::Context& TreeTransformer::Context::child_at_position(unsigned int position) {
-	auto context_it = _transformer._delegate_context.find(_input_node.children()[position]);
 
-	if(context_it == std::end(_transformer._delegate_context)) {
-		const AbstractSyntaxTree* child = _input_node.children()[position];
-		context_it = _transformer._delegate_context.emplace(std::piecewise_construct, std::forward_as_tuple(child), std::forward_as_tuple(_transformer, *child)).first;
+TreeTransformer::Context& TreeTransformer::Context::child_at_position(int position) {
+	unsigned int computed_position = position >= 0 ? position : _input_node.children().size()+position;
+	return _transformer._get_or_create_context(_input_node.children()[computed_position]);
+}
+
+void TreeTransformer::Context::children_filter(TreePatternMatching::Handle filter, std::vector<Context*>& output_list) {
+	for(const AbstractSyntaxTree* child : _input_node.children()) {
+		if(filter.match_with(*child)) {
+			output_list.push_back(&_transformer._get_or_create_context(child));
+		}
 	}
-
-	return context_it->second;
 }
 
 //
 //	Context actions
 //
 
-void TreeTransformer::Context::remove_recursive() {
+void TreeTransformer::Context::remove() {
 	_to_be_deleted = true;
 }
 
@@ -156,9 +136,13 @@ void TreeTransformer::Context::remove_and_ascend_children() {
 }
 
 void TreeTransformer::Context::remove_all_children() {
-	for(const auto& child: _input_node.children()) {
-		_children_actions.push_back(std::make_pair(child, ContextAction::DELETE));
+	for(unsigned int i = 0; i<_input_node.children().size(); i++) {
+		child_at_position(i).remove();
 	}
+
+/*	for(const auto& child: _input_node.children()) {
+		_children_actions.push_back(std::make_pair(child, ContextAction::DELETE));
+	}*/
 	// or create child context with delete = true ? -> need not create the ref in the parent so
 }
 
@@ -173,5 +157,6 @@ void TreeTransformer::Context::replace_node(const std::string& type, const std::
 }
 
 Token TreeTransformer::Context::_create() {
-	return Token(_transformer.output_syntax(!_new_symbol.empty() ? _new_symbol : _input_node.token().type().string()), _has_new_content ? _new_content.c_str() : _input_node.token().content())
+	return Token(_transformer._output_syntax->get_symbol_from_name(!_new_symbol.empty() ? _new_symbol.c_str() : _input_node.token().type().string()),
+				 _has_new_content ? _new_content.c_str() : _input_node.token().content());
 }

@@ -23,15 +23,42 @@ namespace cliff {
 
 			const AbstractSyntaxTree& node() const;
 
-			Context& child_at_position(unsigned int position);
+			Context& child_at_position(int position);
+
+			void children_filter(TreePatternMatching::Handle filter, std::vector<Context*>& output_list);
+
+			//ContextList children_of_type(const std::string& type)
+
+			//
+			//	Attributes
+			//
+			template<typename T>
+			void set(const std::string& name, T* data) {
+				_attributes.emplace(std::piecewise_construct, std::forward_as_tuple(name), std::forward_as_tuple(const_cast<void*>(reinterpret_cast<const void*>(data))));
+			}
+
+			template<typename T>
+			T* get(const std::string& name) {
+				return reinterpret_cast<T*>(_attributes[name]);
+			}
+
+			template<typename T>
+			T* get(const char* name) {
+				auto it = _attributes.find(std::string(name));
+
+				if(it != std::end(_attributes))
+					return reinterpret_cast<T*>(it->second);
+				else
+					return nullptr;
+			}
 
 			//
 			//	Actions
 			//
-
-
-			void remove_recursive();
+			void remove();
 			void remove_and_ascend_children();
+
+			//void remove_child(int position);
 			void remove_all_children();
 
 			void replace_node(const std::string& type);
@@ -51,12 +78,14 @@ namespace cliff {
 			bool _has_new_content;
 			std::string _new_content;
 
-			enum ContextAction {
+			std::map<std::string, void*> _attributes;
+
+			/*enum ContextAction {
 				DELETE,
 				ASCEND
 			};
 
-			std::vector<std::pair<const AbstractSyntaxTree*, ContextAction>> _children_actions;
+			std::vector<std::pair<const AbstractSyntaxTree*, ContextAction>> _children_actions;*/
 		};
 
 		typedef void(*ActionFunction)(TreeTransformer::Context&);
@@ -66,7 +95,7 @@ namespace cliff {
 		void add_rule(TreePatternMatching::Handle filter, ActionFunction action);
 		void add_symbol(const char* symbol_str, bool is_terminal);
 
-		AbstractSyntaxTree& execute(const Syntax& input_syntax, Syntax& output_syntax, const AbstractSyntaxTree& input_tree, MemoryContainer<AbstractSyntaxTree>& output_container);
+		AbstractSyntaxTree* execute(const Syntax& input_syntax, Syntax& output_syntax, const AbstractSyntaxTree& input_tree, MemoryContainer<AbstractSyntaxTree>& output_container);
 
 		//
 		//	Implemented actions
@@ -79,13 +108,16 @@ namespace cliff {
 
 
 	private:
-		AbstractSyntaxTree& _execute(const Syntax& syntax, const AbstractSyntaxTree& current_input_node, AbstractSyntaxTree* parent_node, MemoryContainer<AbstractSyntaxTree>& output_container);
+		AbstractSyntaxTree* _execute(const Syntax& syntax, const AbstractSyntaxTree& current_input_node, AbstractSyntaxTree* parent_node, MemoryContainer<AbstractSyntaxTree>& output_container, bool deleted);
+		TreeTransformer::Context& _get_or_create_context(const AbstractSyntaxTree* node);
 
 		std::vector<std::pair<TreePatternMatching::Handle, ActionFunction>> _rules;
 
 		//
 		//	Synbol transformations
 		//
+		Syntax* _output_syntax;
+
 		enum SymbolAction {
 			ADD,
 			REMOVE
