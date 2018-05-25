@@ -138,6 +138,18 @@ void Syntax::save(const char* filename) {
 //	Symbol
 //
 
+void Syntax::set_symbol_table(std::vector<std::string> symbols, unsigned int terminal_range) {
+	_symbol_table = (TokenSymbol*)std::malloc(sizeof(TokenSymbol)*symbols.size());
+	_symbol_number = symbols.size();
+	_symbol_non_terminal_start = terminal_range;
+
+	for(unsigned int i = 0; i<symbols.size(); i++) {
+		std::cout << "#" << i << " : " << symbols[i] << std::endl;
+		new(_symbol_table+i) TokenSymbol(symbols[i].c_str());
+		_symbols_index.emplace(std::piecewise_construct, std::forward_as_tuple(_symbol_table[i].string()),  std::forward_as_tuple(i));
+	}
+}
+
 void Syntax::set_symbol_table(std::vector<const char*> symbols, unsigned int terminal_range) {
 	_symbol_table = (TokenSymbol*)std::malloc(sizeof(TokenSymbol)*symbols.size());
 	_symbol_number = symbols.size();

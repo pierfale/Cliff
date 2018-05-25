@@ -86,3 +86,7 @@ bool RegularExpressionRepresentation::used() const {
 void RegularExpressionRepresentation::set_used() {
 	_used = true;
 }
+
+void RegularExpressionRepresentation::print(std::ostream& stream) const {
+	stream << "<regular_expression>";
+}

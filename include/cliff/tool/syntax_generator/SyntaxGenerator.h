@@ -20,6 +20,8 @@
 #include "cliff/tool/syntax_generator/ParserGenerator.h"
 #include "cliff/tool/syntax_generator/SyntaxRepresentation.h"
 #include "cliff/tool/syntax_generator/SyntaxReader.h"
+#include "cliff/tool/syntax_generator/EBNF.h"
+#include "cliff/shared/QualifiedIdentifier.h"
 
 namespace cliff {
 
@@ -30,8 +32,8 @@ namespace cliff {
 		virtual void execute(ProgramOption::Iterator option_caller);
 
 	private:
-		void create_syntax(const Syntax& ebnf_syntax, const AbstractSyntaxTree& ast);
-		void get_symbols_name(const Syntax& ebnf_syntax, const AbstractSyntaxTree& syntax_tree, std::vector<std::pair<const char*, bool>>& symbols_name);
+		//void create_syntax(const Syntax& ebnf_syntax, const AbstractSyntaxTree& ast);
+		//void get_symbols_name(const Syntax& ebnf_syntax, const AbstractSyntaxTree& syntax_tree, std::vector<std::pair<const char*, bool>>& symbols_name);
 	};
 
 	static RegisterModule<SyntaxGenerator, Module::Order::PreCompiler> _syntax_generator_module;

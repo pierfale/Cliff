@@ -7,6 +7,7 @@
 
 #include "cliff/shared/Token.h"
 #include "cliff/shared/Exception.h"
+#include "cliff/shared/QualifiedIdentifier.h"
 
 namespace cliff {
 
@@ -56,6 +57,7 @@ namespace cliff {
 		//
 		// Symbol
 		//
+		void set_symbol_table(std::vector<std::string> symbols, unsigned int terminal_range);
 		void set_symbol_table(std::vector<const char*> symbols, unsigned int terminal_range);
 		const TokenSymbol& get_symbol_from_name(const char* symbol_name) const;
 		const TokenSymbol& get_symbol_from_name_or_else(const char* symbol_name, const exception::UserMessage& message) const;
@@ -109,13 +111,16 @@ namespace cliff {
 		//
 		//	Symbol
 		//
+		/*
 		struct StrCompare : public std::binary_function<const char*, const char*, bool> {
 		public:
 			bool operator() (const char* str1, const char* str2) const {
 				return std::strcmp(str1, str2) < 0;
 			}
-		};
-		std::map<const char*, unsigned int, StrCompare> _symbols_index;
+		};*/
+		std::map<std::string, unsigned int> _symbols_index;
+
+
 
 		unsigned int _symbol_number;
 		unsigned int _symbol_non_terminal_start;

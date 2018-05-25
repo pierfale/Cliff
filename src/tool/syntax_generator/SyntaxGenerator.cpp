@@ -12,20 +12,23 @@ void SyntaxGenerator::execute(ProgramOption::Iterator option_caller) {
 	const char* filename = option_caller.next_argument_or_else(error_message_cmd).require_text_argument_or_else(error_message_cmd);
 
 	Syntax syntax;
+	/*
     MemoryContainer<AbstractSyntaxTree> abstract_syntax_tree_container;
 	AbstractSyntaxTree& abstract_syntax_tree_root = SyntaxReader::execute(filename, syntax, abstract_syntax_tree_container);
 
 	std::cout << "Abstract Syntax Tree : " << std::endl;
 	abstract_syntax_tree_root.print(std::cout);
 	std::cout << std::endl;
-
+*/
 	//
 	//	TMP
 	//
 
 	syntax._symbols_index.clear();
 
-	std::vector<const char*> symbols_name = {	"token_global_statement", "token_keyword_global",
+	std::vector<std::string> symbols_name = {	"token_global_statement", "token_keyword_global",
+
+												"statement", "identifier", "scope_identifier", "scope_statement", "scope_content",
 
 												"unamed_terminal", "rule_list", "rule", "rule_name", "rule_alternative", "rule_sequence", "rule_optional", "rule_repetition",
 												"rule_terminal", "rule_non_terminal",
@@ -39,8 +42,14 @@ void SyntaxGenerator::execute(ProgramOption::Iterator option_caller) {
 
 	syntax.set_symbol_table(symbols_name, 0);
 
-	const TokenSymbol& token_global_statement = syntax.get_symbol_from_name("token_global_statement");
-	const TokenSymbol& token_keyword_global = syntax.get_symbol_from_name("token_keyword_global");
+	//const TokenSymbol& token_global_statement = syntax.get_symbol_from_name("token_global_statement");
+	//const TokenSymbol& token_keyword_global = syntax.get_symbol_from_name("token_keyword_global");
+
+	const TokenSymbol& token_symbol_statement = syntax.get_symbol_from_name("statement");
+	const TokenSymbol& token_symbol_identifier = syntax.get_symbol_from_name("identifier");
+	const TokenSymbol& token_symbol_scope_identifier = syntax.get_symbol_from_name("scope_identifier");
+	const TokenSymbol& token_symbol_scope_statement = syntax.get_symbol_from_name("scope_statement");
+	const TokenSymbol& token_symbol_scope_content = syntax.get_symbol_from_name("scope_content");
 
 	const TokenSymbol& token_symbol_unamed_terminal = syntax.get_symbol_from_name("unamed_terminal");
 	const TokenSymbol& token_symbol_rule_list = syntax.get_symbol_from_name("rule_list");
@@ -89,7 +98,7 @@ void SyntaxGenerator::execute(ProgramOption::Iterator option_caller) {
 	}
 */
 
-	MemoryContainer<AbstractSyntaxTree> tree_memory;
+
 /*
 	AbstractSyntaxTree rule_list_node(tree_memory,token_symbol_rule_list);
 
@@ -166,7 +175,10 @@ void SyntaxGenerator::execute(ProgramOption::Iterator option_caller) {
 	// Regular Expression
 	//
 
+
+/*
 	AbstractSyntaxTree rule_list_node(tree_memory,token_symbol_rule_list);
+
 
 	// grammar := (rule ";")*
 	AbstractSyntaxTree& rule_bnf_node_1 = rule_list_node.add_child(token_symbol_rule);
@@ -447,7 +459,7 @@ void SyntaxGenerator::execute(ProgramOption::Iterator option_caller) {
 	AbstractSyntaxTree& rule_13_re_2_1_4 = rule_13_re_2_1.add_child(token_symbol_regular_expression_range_block);
 	rule_13_re_2_1_4.add_child(Token(token_symbol_regular_expression_letter, "_"));
 	rule_13_re_2_1.add_child(Token(token_symbol_unamed_terminal, "]"));
-
+*/
 	//
 	//	Parenthesis
 	//
@@ -509,13 +521,12 @@ void SyntaxGenerator::execute(ProgramOption::Iterator option_caller) {
 	letter_list_3.add_child(letter_i);
 	letter_list_3.add_child(letter_e);
 */
-	std::cout << "Abstract Syntax Tree : " << std::endl;
-	rule_list_node.print(std::cout);
-	std::cout << std::endl;
+	EBNF ebnf;
 
-	create_syntax(syntax, rule_list_node);
+	//create_syntax(syntax, root_scope);
 }
 
+/*
 void SyntaxGenerator::create_syntax(const Syntax& ebnf_syntax, const AbstractSyntaxTree& ast) {
 
 	//
@@ -572,7 +583,8 @@ void SyntaxGenerator::create_syntax(const Syntax& ebnf_syntax, const AbstractSyn
 	generated_syntax.save("syntax.bin");
 
 }
-
+*/
+/*
 void SyntaxGenerator::get_symbols_name(const Syntax& ebnf_syntax, const AbstractSyntaxTree& syntax_tree, std::vector<std::pair<const char*, bool>>& symbols_name) {
 	if(syntax_tree.type() == ebnf_syntax.get_symbol_from_name("rule_terminal")) {
 		symbols_name.push_back(std::make_pair(syntax_tree.content(), true));
@@ -591,3 +603,4 @@ void SyntaxGenerator::get_symbols_name(const Syntax& ebnf_syntax, const Abstract
 			get_symbols_name(ebnf_syntax, *child, symbols_name);
 	}
 }
+*/

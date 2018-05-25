@@ -20,6 +20,8 @@ namespace cliff {
 		bool used() const;
 		void set_used();
 
+		void print(std::ostream& stream) const;
+
 
 	private:
 		NonDeterministeFiniteAutomataNode& construct(const Syntax& ebnf_syntax, const AbstractSyntaxTree& current_tree_node, NonDeterministeFiniteAutomataNode& current_automata_node);
